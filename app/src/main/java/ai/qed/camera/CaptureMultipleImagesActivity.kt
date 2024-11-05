@@ -1,5 +1,6 @@
 package ai.qed.camera
 
+import android.content.pm.PackageManager
 import android.media.MediaActionSound
 import android.os.Bundle
 import android.os.Handler
@@ -17,6 +18,7 @@ import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,12 +33,6 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
-    private lateinit var mode: String
-    private lateinit var captureInterval: String
-    private lateinit var maxPhotoCount: String
-    private lateinit var maxSessionDuration: String
-    private lateinit var photoFormat: String
-
     private lateinit var imageCapture: ImageCapture
     private lateinit var handler: Handler
     private lateinit var outputDirectory: File
@@ -46,15 +42,17 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var savePhotosButton: Button
     private lateinit var cancelButton: Button
     private lateinit var shutterButtonProgressBar: ProgressBar
-    private lateinit var appearanceParametersMap: Map<String, String>
     private lateinit var photoIntervalLabel: TextView
     private lateinit var photoIntervalInput: EditText
 
+    private var mode: String = MODE_PARAM_DEFAULT_VALUE
+    private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
+    private var maxPhotoCount: Int = MAX_PHOTO_COUNT_DEFAULT_VALUE
+    private var maxSessionDuration: Int = MAX_SESSION_DURATION_DEFAULT_VALUE
+    private var photoFormat: String = PHOTO_FORMAT_DEFAULT_VALUE
     private var photoCounter = 0
     private var isAutomaticMode = false
-    private var appearance: String? = null
     private var shutterJob: Job? = null
-    private var capturePhotoInterval = 3
 
     private val sound = MediaActionSound()
 
@@ -62,19 +60,57 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_capture_multiple_images)
 
-        mode = intent.getStringExtra(MODE) ?: ""
-        captureInterval = intent.getStringExtra(CAPTURE_INTERVAL) ?: ""
-        maxPhotoCount = intent.getStringExtra(MAX_PHOTO_COUNT) ?: ""
-        maxSessionDuration = intent.getStringExtra(MAX_SESSION_DURATION) ?: ""
-        photoFormat = intent.getStringExtra(PHOTO_FORMAT) ?: ""
+        if (isCameraPermissionNotGranted()) {
+            requestCameraPermission()
+        } else {
+            startApplication()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_CAMERA_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startApplication()
+            } else {
+                finish()
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        handler.removeCallbacksAndMessages(null)
+        sound.release()
+        finish()
+    }
+
+    private fun isCameraPermissionNotGranted() : Boolean {
+        return ContextCompat.checkSelfPermission(this, CAMERA_PERMISSION_NAME) != PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestCameraPermission() {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(CAMERA_PERMISSION_NAME),
+            REQUEST_CAMERA_PERMISSION_CODE
+        )
+    }
+
+    private fun startApplication() {
+        mode = getStringOrDefaultFromString(intent.getStringExtra(MODE_PARAM_KEY) ?: "", MODE_PARAM_DEFAULT_VALUE)
+        captureInterval = getIntegerOrDefaultFromString(intent.getStringExtra(CAPTURE_INTERVAL_PARAM_KEY) ?: "", CAPTURE_INTERVAL_DEFAULT_VALUE)
+        maxPhotoCount = getIntegerOrDefaultFromString(intent.getStringExtra(MAX_PHOTO_COUNT_PARAM_KEY) ?: "", MAX_PHOTO_COUNT_DEFAULT_VALUE)
+        maxSessionDuration = getIntegerOrDefaultFromString(intent.getStringExtra(MAX_SESSION_DURATION_PARAM_KEY) ?: "", MAX_SESSION_DURATION_DEFAULT_VALUE)
+        photoFormat = getStringOrDefaultFromString(intent.getStringExtra(PHOTO_FORMAT_PARAM_KEY) ?: "", PHOTO_FORMAT_DEFAULT_VALUE)
 
         sound.load(MediaActionSound.SHUTTER_CLICK)
 
         initializeUIElements()
-
-        appearance = intent.getStringExtra("appearance")
-        appearanceParametersMap = buildAppearanceParametersMap(appearance)
-        capturePhotoInterval = getIntegerValueFromParam("capturePhotoInterval", capturePhotoInterval)
 
         outputDirectory = getOutputDirectory()
         clearOutputDirector()
@@ -84,15 +120,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         setupShutterButtonListeners()
         setupCreateButtonListener()
         setupCancelButtonListener()
-
         updateIntervalFieldsVisibility()
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacksAndMessages(null)
-        sound.release()
-        finish()
     }
 
     private fun initializeUIElements() {
@@ -111,7 +139,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             photoIntervalLabel.visibility = View.VISIBLE
             photoIntervalInput.visibility = View.VISIBLE
 
-            photoIntervalInput.setText(capturePhotoInterval.toString())
+            photoIntervalInput.setText(captureInterval.toString())
         }
     }
 
@@ -134,14 +162,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
 
-                val cameraMode = getStringValueFromParam("mode", "automatic")
-                isAutomaticMode = cameraMode == "automatic"
+                isAutomaticMode = mode == MODE_PARAM_DEFAULT_VALUE
 
                 updateModeText()
                 updateIntervalFieldsVisibility()
 
                 if (isAutomaticMode) {
-                    photoIntervalInput.setText(capturePhotoInterval.toString())
+                    photoIntervalInput.setText(captureInterval.toString())
                     startImageCapture()
                 }
             } catch (ex: Exception) {
@@ -158,7 +185,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takePicturesInSeries() {
-        val maxPhotoCount = getIntegerValueFromParam("maxPhotoCount", 500)
         handler.postDelayed({
             if (photoCounter < maxPhotoCount) {
                 takeSinglePicture()
@@ -167,12 +193,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             } else {
                 handler.removeCallbacksAndMessages(null)
             }
-        }, capturePhotoInterval * 1000L)
+        }, captureInterval * 1000L)
     }
 
     private fun takeSinglePicture() {
-        val photoExtension = getStringValueFromParam("photoFormat", "jpg")
-        val photoFile = File(outputDirectory, "photo_${System.currentTimeMillis()}.${photoExtension}")
+        val photoFile = File(outputDirectory, "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${photoFormat}")
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         sound.play(MediaActionSound.SHUTTER_CLICK)
@@ -212,7 +237,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             }
             false
         }
-
     }
 
     private fun setupCreateButtonListener() {
@@ -224,7 +248,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun createPackageWithPhotos() {
         val zipFileName = File(outputDirectory, "photos_${System.currentTimeMillis()}.zip")
-        val files = outputDirectory.listFiles { file -> file.name.startsWith("photo_") }
+        val files = outputDirectory.listFiles { file -> file.name.startsWith(PHOTO_NAME_PREFIX) }
 
         if (files != null && files.isNotEmpty()) {
             try {
@@ -264,9 +288,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun updateModeText() {
         if (isAutomaticMode) {
-            modeInfoTextView.text = "[Automatic Mode]"
+            modeInfoTextView.text = getString(R.string.automatic_mode_label)
         } else {
-            modeInfoTextView.text = "[Manual Mode]"
+            modeInfoTextView.text = getString(R.string.manual_mode_label)
         }
     }
 
@@ -278,7 +302,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun getOutputDirectory(): File {
         val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, "Collect").apply { mkdirs() }
+            File(it, PHOTOS_DIRECTORY_NAME).apply { mkdirs() }
         }
 
         return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
@@ -292,32 +316,18 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
     }
 
-    private fun buildAppearanceParametersMap(appearance: String?): Map<String, String> {
-        val paramsPrefix = "multi-image("
-        val paramsSuffix = ")"
-        if (appearance != null && appearance.startsWith(paramsPrefix) && appearance.endsWith(paramsSuffix)) {
-            val rawParams = appearance.substringAfter(paramsPrefix).substringBeforeLast(paramsSuffix)
-            return rawParams.split(",").associate {
-                val (key, value) = it.split("=")
-                key to value
-            }
-        }
-
-        return emptyMap()
-    }
-
-    private fun getIntegerValueFromParam(paramName: String, defaultValue: Int) : Int {
-        val paramStringValue = appearanceParametersMap[paramName]
-        return if (paramStringValue == null) {
+    private fun getIntegerOrDefaultFromString(value: String, defaultValue: Int) : Int {
+        return if (value.isEmpty()) {
             defaultValue
         } else {
-            paramStringValue.toIntOrNull() ?: defaultValue
+            value.toIntOrNull() ?: defaultValue
         }
     }
 
-    private fun getStringValueFromParam(paramName: String, defaultValue: String) : String {
-        val paramStringValue = appearanceParametersMap[paramName]
-        return paramStringValue ?: defaultValue
+    private fun getStringOrDefaultFromString(value: String, defaultValue: String) : String {
+        return value.ifEmpty {
+            defaultValue
+        }
     }
 
     private fun getExecutor(): Executor {
