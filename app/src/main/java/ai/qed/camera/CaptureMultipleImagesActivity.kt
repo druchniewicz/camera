@@ -31,6 +31,12 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
+    private lateinit var mode: String
+    private lateinit var captureInterval: String
+    private lateinit var maxPhotoCount: String
+    private lateinit var maxSessionDuration: String
+    private lateinit var photoFormat: String
+
     private lateinit var imageCapture: ImageCapture
     private lateinit var handler: Handler
     private lateinit var outputDirectory: File
@@ -55,6 +61,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_capture_multiple_images)
+
+        mode = intent.getStringExtra(MODE) ?: ""
+        captureInterval = intent.getStringExtra(CAPTURE_INTERVAL) ?: ""
+        maxPhotoCount = intent.getStringExtra(MAX_PHOTO_COUNT) ?: ""
+        maxSessionDuration = intent.getStringExtra(MAX_SESSION_DURATION) ?: ""
+        photoFormat = intent.getStringExtra(PHOTO_FORMAT) ?: ""
+
         sound.load(MediaActionSound.SHUTTER_CLICK)
 
         initializeUIElements()
