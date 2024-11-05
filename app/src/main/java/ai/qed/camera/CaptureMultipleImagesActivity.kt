@@ -1,7 +1,11 @@
 package ai.qed.camera
 
+import android.app.Activity
+import android.content.ClipData
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaActionSound
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -20,6 +24,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -118,7 +123,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         startCamera()
         setupIntervalInput()
         setupShutterButtonListeners()
-        setupCreateButtonListener()
+        setupSaveButtonListener()
         setupCancelButtonListener()
         updateIntervalFieldsVisibility()
     }
@@ -239,20 +244,20 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupCreateButtonListener() {
+    private fun setupSaveButtonListener() {
         savePhotosButton.setOnClickListener {
-            createPackageWithPhotos()
-            finish()
+            val outputPackage = createPackageWithPhotos()
+            returnAnswer(outputPackage)
         }
     }
 
-    private fun createPackageWithPhotos() {
-        val zipFileName = File(outputDirectory, "photos_${System.currentTimeMillis()}.zip")
+    private fun createPackageWithPhotos() : File {
+        val zipFile = File(outputDirectory, "photos_${System.currentTimeMillis()}.zip")
         val files = outputDirectory.listFiles { file -> file.name.startsWith(PHOTO_NAME_PREFIX) }
 
         if (files != null && files.isNotEmpty()) {
             try {
-                ZipOutputStream(zipFileName.outputStream().buffered()).use { zipOut ->
+                ZipOutputStream(zipFile.outputStream().buffered()).use { zipOut ->
                     for (file in files) {
                         FileInputStream(file).use { fis ->
                             val entry = ZipEntry(file.name)
@@ -265,6 +270,30 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             } catch (e: IOException) {
                 Log.e("CaptureMultiplePhotos", "Error when creating zip package", e)
             }
+        }
+
+        return zipFile
+    }
+
+    private fun returnAnswer(file: File) {
+        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
+        val uri = getUriForFile(file)
+        addItem(intent, uri)
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        setResult(Activity.RESULT_OK, intent)
+        finish()
+    }
+
+    private fun getUriForFile(file: File) : Uri {
+        return FileProvider.getUriForFile(applicationContext, "ai.qed.camera.fileprovider", file)
+    }
+
+    private fun addItem(intent: Intent, uri: Uri) {
+        intent.putExtra("value", uri)
+        if (intent.clipData == null) {
+            intent.clipData = ClipData.newRawUri(null, uri)
+        } else {
+            intent.clipData?.addItem(ClipData.Item(uri))
         }
     }
 
