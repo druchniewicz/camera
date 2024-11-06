@@ -34,7 +34,7 @@
         <activity
             android:name=".CaptureMultipleImagesActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat">
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
             <intent-filter>
                 <action android:name="ai.qed.camera"/>
                 <category android:name="android.intent.category.DEFAULT"/>
