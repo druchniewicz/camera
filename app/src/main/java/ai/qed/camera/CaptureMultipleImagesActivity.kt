@@ -1,6 +1,7 @@
 package ai.qed.camera
 
 import android.app.Activity
+import android.app.ProgressDialog
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,7 +13,6 @@ import android.os.HandlerThread
 import android.util.Log
 import android.view.View
 import android.widget.Button
-import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
@@ -49,7 +50,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var cancelButton: Button
     private lateinit var shutterButtonProgressBar: ProgressBar
     private lateinit var photoIntervalLabel: TextView
-    private lateinit var photoIntervalInput: EditText
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -123,7 +123,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         clearOutputDirector()
 
         startCamera()
-        setupIntervalInput()
+        setupIntervalLabel()
         setupShutterButtonListeners()
         setupSaveButtonListener()
         setupCancelButtonListener()
@@ -132,21 +132,18 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun initializeUIElements() {
         previewView = findViewById(R.id.preview)
-        modeInfoTextView = findViewById(R.id.mode_info)
+        modeInfoTextView = findViewById(R.id.label_modeInfo)
         shutterButton = findViewById(R.id.btn_shutter)
         savePhotosButton = findViewById(R.id.btn_savePhotos)
         cancelButton = findViewById(R.id.btn_cancel)
         shutterButtonProgressBar = findViewById(R.id.progressBar_shutterBtn)
-        photoIntervalLabel = findViewById(R.id.photo_interval_label)
-        photoIntervalInput = findViewById(R.id.photo_interval_input)
+        photoIntervalLabel = findViewById(R.id.label_photoInterval)
     }
 
-    private fun setupIntervalInput() {
+    private fun setupIntervalLabel() {
         if (isAutomaticMode) {
+            photoIntervalLabel.text = getString(R.string.photo_interval_label, captureInterval)
             photoIntervalLabel.visibility = View.VISIBLE
-            photoIntervalInput.visibility = View.VISIBLE
-
-            photoIntervalInput.setText(captureInterval.toString())
         }
     }
 
@@ -175,7 +172,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 updateIntervalFieldsVisibility()
 
                 if (isAutomaticMode) {
-                    photoIntervalInput.setText(captureInterval.toString())
+                    photoIntervalLabel.text = getString(R.string.photo_interval_label, captureInterval)
                     startImageCapture()
                 }
             } catch (ex: Exception) {
@@ -248,8 +245,21 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun setupSaveButtonListener() {
         savePhotosButton.setOnClickListener {
-            val outputPackage = createPackageWithPhotos()
-            returnAnswer(outputPackage)
+            handler.removeCallbacksAndMessages(null)
+
+            val progressDialog = ProgressDialog(this).apply {
+                setMessage(getString(R.string.saving_toast_message))
+                setCancelable(false)
+                show()
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                val outputPackage = createPackageWithPhotos()
+                withContext(Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    returnAnswer(outputPackage)
+                }
+            }
         }
     }
 
@@ -328,7 +338,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun updateIntervalFieldsVisibility() {
         val visibility = if (isAutomaticMode) View.VISIBLE else View.GONE
         photoIntervalLabel.visibility = visibility
-        photoIntervalInput.visibility = visibility
     }
 
     private fun getOutputDirectory(): File {
