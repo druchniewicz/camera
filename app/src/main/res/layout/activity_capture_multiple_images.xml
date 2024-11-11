@@ -25,6 +25,19 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="48dp"/>
 
+    <TextView
+        android:id="@+id/label_sessionTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Session time: "
+        android:textColor="@android:color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="48dp"
+        android:layout_marginEnd="16dp"/>
+
     <ProgressBar
         android:id="@+id/progressBar_shutterBtn"
         style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"

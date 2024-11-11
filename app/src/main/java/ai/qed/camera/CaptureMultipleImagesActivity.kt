@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaActionSound
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -19,7 +18,6 @@ import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
@@ -56,6 +54,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var cancelButton: Button
     private lateinit var shutterButtonProgressBar: ProgressBar
     private lateinit var settingsButton: ImageButton
+    private lateinit var sessionTimeLabel: TextView
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -65,6 +64,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var photoCounter = 0
     private var isAutomaticMode = false
     private var shutterJob: Job? = null
+    private var sessionTimeJob: Job? = null
+    private var remainingSessionTime = maxSessionDuration
 
     private val sound = MediaActionSound()
 
@@ -100,6 +101,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
+        sessionTimeJob?.cancel()
         sound.release()
         finish()
     }
@@ -173,6 +175,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         cancelButton = findViewById(R.id.btn_cancel)
         shutterButtonProgressBar = findViewById(R.id.progressBar_shutterBtn)
         settingsButton = findViewById(R.id.btn_settings)
+        sessionTimeLabel = findViewById(R.id.label_sessionTime)
     }
 
     private fun startCamera() {
@@ -205,6 +208,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 Log.e("CameraBinding", "Something went wrong during camera binding")
             }
         }, ContextCompat.getMainExecutor(this))
+
+        setupSessionTimer()
     }
 
     private fun startImageCapture() {
@@ -215,6 +220,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takePicturesInSeries() {
+        handler.removeCallbacksAndMessages(null)
+
         if (!isAutomaticMode) return
 
         handler.postDelayed({
@@ -271,22 +278,43 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupSessionTimer() {
+        remainingSessionTime = maxSessionDuration
+        sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
+            while (remainingSessionTime >= 0) {
+                sessionTimeLabel.text = getString(R.string.session_time_label, remainingSessionTime)
+                delay(1000)
+                remainingSessionTime--
+            }
+            saveAndExit()
+        }
+    }
+
+    private fun saveAndExit() {
+        sessionTimeJob?.cancel()
+        handleSaveButton()
+    }
+
     private fun setupSaveButtonListener() {
         savePhotosButton.setOnClickListener {
-            handler.removeCallbacksAndMessages(null)
+            handleSaveButton()
+        }
+    }
 
-            val progressDialog = ProgressDialog(this).apply {
-                setMessage(getString(R.string.saving_toast_message))
-                setCancelable(false)
-                show()
-            }
+    private fun handleSaveButton() {
+        handler.removeCallbacksAndMessages(null)
 
-            CoroutineScope(Dispatchers.IO).launch {
-                val outputPackage = createPackageWithPhotos()
-                withContext(Dispatchers.Main) {
-                    progressDialog.dismiss()
-                    returnAnswer(outputPackage)
-                }
+        val progressDialog = ProgressDialog(this).apply {
+            setMessage(getString(R.string.saving_toast_message))
+            setCancelable(false)
+            show()
+        }
+
+        CoroutineScope(Dispatchers.IO).launch {
+            val outputPackage = createPackageWithPhotos()
+            withContext(Dispatchers.Main) {
+                progressDialog.dismiss()
+                returnAnswer(outputPackage)
             }
         }
     }
@@ -351,10 +379,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun restartCameraIfNeeded() {
+        handler.removeCallbacksAndMessages(null)
         if (isAutomaticMode) {
             startImageCapture()
-        } else {
-            handler.removeCallbacksAndMessages(null)
         }
     }
 
