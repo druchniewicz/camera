@@ -3,5 +3,9 @@
     <string name="automatic_mode_label">[Automatic Mode]</string>
     <string name="manual_mode_label">[Manual Mode]</string>
     <string name="saving_toast_message">Saving...</string>
-    <string name="photo_interval_label">Photo interval in seconds: %1$d</string>
+    <string name="settings_dialog_title">Settings</string>
+    <string name="photo_interval_dialog_label">Photo interval (in seconds)</string>
+    <string name="automatic_mode_dialog_label">Automatic mode</string>
+    <string name="save_dialog_button">Save</string>
+    <string name="cancel_dialog_button">Cancel</string>
 </resources>

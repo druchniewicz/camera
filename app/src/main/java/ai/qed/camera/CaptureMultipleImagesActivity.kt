@@ -7,16 +7,22 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaActionSound
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -49,7 +55,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var savePhotosButton: Button
     private lateinit var cancelButton: Button
     private lateinit var shutterButtonProgressBar: ProgressBar
-    private lateinit var photoIntervalLabel: TextView
+    private lateinit var settingsButton: ImageButton
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -72,6 +78,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         } else {
             startApplication()
         }
+
+        setupSettingsButtonListener()
     }
 
     override fun onRequestPermissionsResult(
@@ -94,6 +102,35 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         handler.removeCallbacksAndMessages(null)
         sound.release()
         finish()
+    }
+
+    private fun setupSettingsButtonListener() {
+        settingsButton.setOnClickListener {
+            showSettingsDialog()
+        }
+    }
+
+    private fun showSettingsDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_camera_settings, null)
+        val captureIntervalInput = dialogView.findViewById<EditText>(R.id.input_captureInterval)
+        val modeSwitch = dialogView.findViewById<SwitchCompat>(R.id.switch_mode)
+
+        captureIntervalInput.setText(captureInterval.toString())
+        modeSwitch.isChecked = isAutomaticMode
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.settings_dialog_title))
+            .setView(dialogView)
+            .setPositiveButton(getString(R.string.save_dialog_button)) {_, _ ->
+                isAutomaticMode = modeSwitch.isChecked
+                captureInterval = captureIntervalInput.text.toString().toIntOrNull() ?: captureInterval
+                updateModeText()
+                restartCameraIfNeeded()
+            }
+            .setNegativeButton(getString(R.string.cancel_dialog_button), null)
+            .create()
+
+        dialog.show()
     }
 
     private fun isCameraPermissionNotGranted() : Boolean {
@@ -123,11 +160,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         clearOutputDirector()
 
         startCamera()
-        setupIntervalLabel()
         setupShutterButtonListeners()
         setupSaveButtonListener()
         setupCancelButtonListener()
-        updateIntervalFieldsVisibility()
     }
 
     private fun initializeUIElements() {
@@ -137,14 +172,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         savePhotosButton = findViewById(R.id.btn_savePhotos)
         cancelButton = findViewById(R.id.btn_cancel)
         shutterButtonProgressBar = findViewById(R.id.progressBar_shutterBtn)
-        photoIntervalLabel = findViewById(R.id.label_photoInterval)
-    }
-
-    private fun setupIntervalLabel() {
-        if (isAutomaticMode) {
-            photoIntervalLabel.text = getString(R.string.photo_interval_label, captureInterval)
-            photoIntervalLabel.visibility = View.VISIBLE
-        }
+        settingsButton = findViewById(R.id.btn_settings)
     }
 
     private fun startCamera() {
@@ -169,10 +197,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 isAutomaticMode = mode == MODE_PARAM_DEFAULT_VALUE
 
                 updateModeText()
-                updateIntervalFieldsVisibility()
 
                 if (isAutomaticMode) {
-                    photoIntervalLabel.text = getString(R.string.photo_interval_label, captureInterval)
                     startImageCapture()
                 }
             } catch (ex: Exception) {
@@ -189,6 +215,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takePicturesInSeries() {
+        if (!isAutomaticMode) return
+
         handler.postDelayed({
             if (photoCounter < maxPhotoCount) {
                 takeSinglePicture()
@@ -318,8 +346,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun toggleAutoMode() {
         isAutomaticMode = !isAutomaticMode
         updateModeText()
-        updateIntervalFieldsVisibility()
 
+        restartCameraIfNeeded()
+    }
+
+    private fun restartCameraIfNeeded() {
         if (isAutomaticMode) {
             startImageCapture()
         } else {
@@ -333,11 +364,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         } else {
             modeInfoTextView.text = getString(R.string.manual_mode_label)
         }
-    }
-
-    private fun updateIntervalFieldsVisibility() {
-        val visibility = if (isAutomaticMode) View.VISIBLE else View.GONE
-        photoIntervalLabel.visibility = visibility
     }
 
     private fun getOutputDirectory(): File {
