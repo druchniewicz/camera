@@ -6,6 +6,7 @@ import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaActionSound
+import android.media.SoundPool
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -56,6 +57,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var settingsButton: ImageButton
     private lateinit var sessionTimeLabel: TextView
     private lateinit var volumeButton: ImageButton
+    private lateinit var soundPool: SoundPool
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -69,7 +71,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var remainingSessionTime = maxSessionDuration
     private var isUnlimitedSession = false
     private var isSoundOn = true
-    private var sound = MediaActionSound()
+    private var shutterSoundId: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -81,9 +83,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         } else {
             startApplication()
         }
-
-        setupSettingsButtonListener()
-        setupVolumeButtonListener()
     }
 
     override fun onRequestPermissionsResult(
@@ -105,7 +104,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
         sessionTimeJob?.cancel()
-        sound.release()
+        soundPool.release()
         finish()
     }
 
@@ -119,13 +118,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         volumeButton.setOnClickListener {
             isSoundOn = !isSoundOn
             updateVolumeIcon()
-
-            if (isSoundOn) {
-                sound = MediaActionSound()
-                sound.load(MediaActionSound.SHUTTER_CLICK)
-            } else {
-                sound.release()
-            }
         }
     }
 
@@ -181,14 +173,15 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         isUnlimitedSession = maxSessionDuration == ZERO
 
-        sound.load(MediaActionSound.SHUTTER_CLICK)
-
         initializeUIElements()
+        initializeSoundPool()
 
         outputDirectory = getOutputDirectory()
         clearOutputDirector()
 
         startCamera()
+        setupSettingsButtonListener()
+        setupVolumeButtonListener()
         setupShutterButtonListeners()
         setupSaveButtonListener()
         setupCancelButtonListener()
@@ -204,6 +197,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         settingsButton = findViewById(R.id.btn_settings)
         sessionTimeLabel = findViewById(R.id.label_sessionTime)
         volumeButton = findViewById(R.id.btn_volume)
+    }
+
+    private fun initializeSoundPool() {
+        soundPool = SoundPool.Builder().setMaxStreams(1).build()
+        shutterSoundId = soundPool.load(this, R.raw.camera_shutter_sound, 1)
     }
 
     private fun startCamera() {
@@ -273,7 +271,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         if (isSoundOn) {
-            sound.play(MediaActionSound.SHUTTER_CLICK)
+            soundPool.play(shutterSoundId, 1f, 1f, 0, 0, 1f)
         }
 
         imageCapture.takePicture(outputOptions, getExecutor(), object : ImageCapture.OnImageSavedCallback {
