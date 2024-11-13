@@ -29,7 +29,6 @@
         android:id="@+id/label_sessionTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Session time: "
         android:textColor="@android:color/white"
         android:textSize="18sp"
         android:textStyle="bold"

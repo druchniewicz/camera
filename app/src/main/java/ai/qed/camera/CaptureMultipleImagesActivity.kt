@@ -66,6 +66,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var shutterJob: Job? = null
     private var sessionTimeJob: Job? = null
     private var remainingSessionTime = maxSessionDuration
+    private var isUnlimitedSession = false
 
     private val sound = MediaActionSound()
 
@@ -154,6 +155,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         maxSessionDuration = getIntegerOrDefaultFromString(intent.getStringExtra(MAX_SESSION_DURATION_PARAM_KEY) ?: "", MAX_SESSION_DURATION_DEFAULT_VALUE)
         photoFormat = getStringOrDefaultFromString(intent.getStringExtra(PHOTO_FORMAT_PARAM_KEY) ?: "", PHOTO_FORMAT_DEFAULT_VALUE)
 
+        isUnlimitedSession = maxSessionDuration == ZERO
+
         sound.load(MediaActionSound.SHUTTER_CLICK)
 
         initializeUIElements()
@@ -209,7 +212,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             }
         }, ContextCompat.getMainExecutor(this))
 
-        setupSessionTimer()
+        if (!isUnlimitedSession) {
+            setupSessionTimer()
+            sessionTimeLabel.visibility = View.VISIBLE
+        } else {
+            sessionTimeLabel.visibility = View.GONE
+        }
     }
 
     private fun startImageCapture() {
