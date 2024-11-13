@@ -50,11 +50,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private lateinit var shutterButton: Button
     private lateinit var modeInfoTextView: TextView
-    private lateinit var savePhotosButton: Button
-    private lateinit var cancelButton: Button
+    private lateinit var savePhotosButton: ImageButton
+    private lateinit var cancelButton: ImageButton
     private lateinit var shutterButtonProgressBar: ProgressBar
     private lateinit var settingsButton: ImageButton
     private lateinit var sessionTimeLabel: TextView
+    private lateinit var volumeButton: ImageButton
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -67,8 +68,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var sessionTimeJob: Job? = null
     private var remainingSessionTime = maxSessionDuration
     private var isUnlimitedSession = false
-
-    private val sound = MediaActionSound()
+    private var isSoundOn = true
+    private var sound = MediaActionSound()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -82,6 +83,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         setupSettingsButtonListener()
+        setupVolumeButtonListener()
     }
 
     override fun onRequestPermissionsResult(
@@ -110,6 +112,28 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun setupSettingsButtonListener() {
         settingsButton.setOnClickListener {
             showSettingsDialog()
+        }
+    }
+
+    private fun setupVolumeButtonListener() {
+        volumeButton.setOnClickListener {
+            isSoundOn = !isSoundOn
+            updateVolumeIcon()
+
+            if (isSoundOn) {
+                sound = MediaActionSound()
+                sound.load(MediaActionSound.SHUTTER_CLICK)
+            } else {
+                sound.release()
+            }
+        }
+    }
+
+    private fun updateVolumeIcon() {
+        if (isSoundOn) {
+            volumeButton.setImageResource(R.drawable.ic_volume_on)
+        } else {
+            volumeButton.setImageResource(R.drawable.ic_volume_off)
         }
     }
 
@@ -179,6 +203,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         shutterButtonProgressBar = findViewById(R.id.progressBar_shutterBtn)
         settingsButton = findViewById(R.id.btn_settings)
         sessionTimeLabel = findViewById(R.id.label_sessionTime)
+        volumeButton = findViewById(R.id.btn_volume)
     }
 
     private fun startCamera() {
@@ -247,7 +272,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         val photoFile = File(outputDirectory, "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${photoFormat}")
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
-        sound.play(MediaActionSound.SHUTTER_CLICK)
+        if (isSoundOn) {
+            sound.play(MediaActionSound.SHUTTER_CLICK)
+        }
 
         imageCapture.takePicture(outputOptions, getExecutor(), object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {}

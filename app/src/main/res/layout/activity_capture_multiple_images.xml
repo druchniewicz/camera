@@ -17,12 +17,26 @@
         android:id="@+id/btn_settings"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_settings_icon"
+        android:contentDescription="@string/settings_dialog_title"
+        android:src="@drawable/ic_settings"
         app:tint="@android:color/white"
         android:background="?attr/selectableItemBackgroundBorderless"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         android:layout_marginStart="16dp"
+        android:layout_marginTop="48dp"/>
+
+    <ImageButton
+        android:id="@+id/btn_volume"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:contentDescription="@string/volume_toggle"
+        android:src="@drawable/ic_volume_on"
+        app:tint="@android:color/white"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toEndOf="@id/btn_settings"
+        android:layout_marginStart="42dp"
         android:layout_marginTop="48dp"/>
 
     <TextView
@@ -51,11 +65,12 @@
         app:layout_constraintStart_toStartOf="@id/btn_shutter"
         app:layout_constraintTop_toTopOf="@id/btn_shutter" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btn_cancel"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@android:drawable/ic_delete"
+        android:background="@drawable/ic_close"
+        android:contentDescription="@string/cancel_dialog_button"
         app:layout_constraintBottom_toTopOf="@id/label_modeInfo"
         app:layout_constraintEnd_toStartOf="@id/btn_shutter"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,11 +86,12 @@
         app:layout_constraintEnd_toStartOf="@id/btn_savePhotos"
         android:layout_marginBottom="16dp" />
 
-    <Button
+    <ImageButton
         android:id="@+id/btn_savePhotos"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:background="@android:drawable/ic_menu_save"
+        android:background="@drawable/ic_save"
+        android:contentDescription="@string/save_dialog_button"
         app:layout_constraintBottom_toTopOf="@id/label_modeInfo"
         app:layout_constraintStart_toEndOf="@id/btn_shutter"
         app:layout_constraintEnd_toEndOf="parent"

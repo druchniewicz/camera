@@ -9,4 +9,5 @@
     <string name="save_dialog_button">Save</string>
     <string name="cancel_dialog_button">Cancel</string>
     <string name="session_time_label">Session time: %1$d s</string>
+    <string name="volume_toggle">Volume toggle</string>
 </resources>
