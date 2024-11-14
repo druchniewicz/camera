@@ -5,7 +5,6 @@ import android.app.ProgressDialog
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.MediaActionSound
 import android.media.SoundPool
 import android.net.Uri
 import android.os.Bundle
@@ -72,6 +71,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var isUnlimitedSession = false
     private var isSoundOn = true
     private var shutterSoundId: Int = 0
+    private var remainingSessionTimeBeforePause: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -146,7 +146,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 updateModeText()
                 restartCameraIfNeeded()
             }
-            .setNegativeButton(getString(R.string.cancel_dialog_button), null)
+            .setNegativeButton(getString(R.string.cancel_button_label), null)
             .create()
 
         dialog.show()
@@ -177,7 +177,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         initializeSoundPool()
 
         outputDirectory = getOutputDirectory()
-        clearOutputDirector()
+        clearOutputDirectory()
 
         startCamera()
         setupSettingsButtonListener()
@@ -330,7 +330,49 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun setupSaveButtonListener() {
         savePhotosButton.setOnClickListener {
-            handleSaveButton()
+            showSaveConfirmationDialog()
+        }
+    }
+
+    private fun showSaveConfirmationDialog() {
+        remainingSessionTimeBeforePause = remainingSessionTime
+        sessionTimeJob?.cancel()
+        handler.removeCallbacksAndMessages(null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.save_dialog_title))
+            .setMessage(getString(R.string.save_dialog_message))
+            .setPositiveButton(getString(R.string.yes_button_label)) {_, _, ->
+                handleSaveButton()
+            }
+            .setNegativeButton(getString(R.string.cancel_button_label)) { dialog, _ ->
+                dialog.dismiss()
+                resumeSession()
+            }
+            .create()
+
+        dialog.show()
+    }
+
+    private fun resumeSession() {
+        if (!isUnlimitedSession && remainingSessionTimeBeforePause != null) {
+            resumeSessionTimer(remainingSessionTimeBeforePause!!)
+        }
+
+        if (isAutomaticMode) {
+            takePicturesInSeries()
+        }
+    }
+
+    private fun resumeSessionTimer(remainingTime: Int) {
+        sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
+            remainingSessionTime = remainingTime
+            while (remainingSessionTime >= 0) {
+                sessionTimeLabel.text = getString(R.string.session_time_label, remainingSessionTime)
+                delay(1000)
+                remainingSessionTime--
+            }
+            saveAndExit()
         }
     }
 
@@ -400,8 +442,28 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun setupCancelButtonListener() {
         cancelButton.setOnClickListener {
-            finish()
+            showExitConfirmationDialog()
         }
+    }
+
+    private fun showExitConfirmationDialog() {
+        remainingSessionTimeBeforePause = remainingSessionTime
+        sessionTimeJob?.cancel()
+        handler.removeCallbacksAndMessages(null)
+
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(R.string.exit_dialog_title))
+            .setMessage(getString(R.string.exit_dialog_message))
+            .setPositiveButton(getString(R.string.yes_button_label)) { _, _ ->
+                finish()
+            }
+            .setNegativeButton(getString(R.string.cancel_button_label)) { dialog, _ ->
+                dialog.dismiss()
+                resumeSession()
+            }
+            .create()
+
+        dialog.show()
     }
 
     private fun toggleAutoMode() {
@@ -434,7 +496,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
     }
 
-    private fun clearOutputDirector() {
+    private fun clearOutputDirectory() {
         if (outputDirectory.exists()) {
             outputDirectory.listFiles()?.forEach { file ->
                 file.delete()

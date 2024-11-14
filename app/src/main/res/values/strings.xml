@@ -7,7 +7,12 @@
     <string name="photo_interval_dialog_label">Photo interval (in seconds)</string>
     <string name="automatic_mode_dialog_label">Automatic mode</string>
     <string name="save_dialog_button">Save</string>
-    <string name="cancel_dialog_button">Cancel</string>
     <string name="session_time_label">Session time: %1$d s</string>
     <string name="volume_toggle">Volume toggle</string>
+    <string name="yes_button_label">Yes</string>
+    <string name="cancel_button_label">Cancel</string>
+    <string name="exit_dialog_title">Exit</string>
+    <string name="exit_dialog_message">Current session will be canceled and data will be lost. Do you want to continue?</string>
+    <string name="save_dialog_title">Finish session</string>
+    <string name="save_dialog_message">Current session will be finished and data will be saved. Do you want to continue?</string>
 </resources>
