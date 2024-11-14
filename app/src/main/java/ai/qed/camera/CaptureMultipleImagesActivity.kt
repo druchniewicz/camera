@@ -12,7 +12,6 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.View
-import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
@@ -48,7 +47,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var handler: Handler
     private lateinit var outputDirectory: File
     private lateinit var previewView: PreviewView
-    private lateinit var shutterButton: Button
+    private lateinit var shutterButton: ImageButton
     private lateinit var modeInfoTextView: TextView
     private lateinit var savePhotosButton: ImageButton
     private lateinit var cancelButton: ImageButton
@@ -58,6 +57,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var volumeButton: ImageButton
     private lateinit var soundPool: SoundPool
     private lateinit var shutterEffectView: View
+    private lateinit var elapsedTimeTextView: TextView
+    private lateinit var photosTakenTextView: TextView
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -73,6 +74,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var isSoundOn = true
     private var shutterSoundId: Int = 0
     private var remainingSessionTimeBeforePause: Int? = null
+    private var elapsedTimeJob: Job? = null
+    private var elapsedTimeInSeconds = 0
+    private var elapsedTimeBeforePause: Int? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -105,6 +109,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         super.onDestroy()
         handler.removeCallbacksAndMessages(null)
         sessionTimeJob?.cancel()
+        elapsedTimeJob?.cancel()
         soundPool.release()
         finish()
     }
@@ -186,6 +191,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         setupShutterButtonListeners()
         setupSaveButtonListener()
         setupCancelButtonListener()
+        startElapsedTimeCounter()
     }
 
     private fun initializeUIElements() {
@@ -199,6 +205,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         sessionTimeLabel = findViewById(R.id.label_sessionTime)
         volumeButton = findViewById(R.id.btn_volume)
         shutterEffectView = findViewById(R.id.shutter_effect_view)
+        elapsedTimeTextView = findViewById(R.id.label_elapsedTime)
+        photosTakenTextView = findViewById(R.id.label_photosTaken)
     }
 
     private fun initializeSoundPool() {
@@ -260,7 +268,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         handler.postDelayed({
             if (photoCounter < maxPhotoCount) {
                 takeSinglePicture()
-                photoCounter++
                 takePicturesInSeries()
             } else {
                 handler.removeCallbacksAndMessages(null)
@@ -278,7 +285,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         triggerShutterEffect()
 
         imageCapture.takePicture(outputOptions, getExecutor(), object : ImageCapture.OnImageSavedCallback {
-            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {}
+            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                photoCounter++
+                photosTakenTextView.text = getString(R.string.photos_taken_label, photoCounter)
+            }
             override fun onError(exception: ImageCaptureException) {}
         })
     }
@@ -340,7 +350,18 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun saveAndExit() {
         sessionTimeJob?.cancel()
+        elapsedTimeJob?.cancel()
         handleSaveButton()
+    }
+
+    private fun startElapsedTimeCounter() {
+        elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
+            while (true) {
+                elapsedTimeTextView.text = getString(R.string.elapsed_time_label, elapsedTimeInSeconds)
+                elapsedTimeInSeconds++
+                delay(1000)
+            }
+        }
     }
 
     private fun setupSaveButtonListener() {
@@ -351,7 +372,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun showSaveConfirmationDialog() {
         remainingSessionTimeBeforePause = remainingSessionTime
+        elapsedTimeBeforePause = elapsedTimeInSeconds
         sessionTimeJob?.cancel()
+        elapsedTimeJob?.cancel()
         handler.removeCallbacksAndMessages(null)
 
         val dialog = AlertDialog.Builder(this)
@@ -376,6 +399,16 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         if (isAutomaticMode) {
             takePicturesInSeries()
+        }
+
+        elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
+            var currentElapsedTime = elapsedTimeBeforePause ?: elapsedTimeInSeconds
+            while (true) {
+                elapsedTimeTextView.text = getString(R.string.elapsed_time_label, currentElapsedTime)
+                currentElapsedTime++
+                elapsedTimeInSeconds = currentElapsedTime
+                delay(1000)
+            }
         }
     }
 
@@ -463,7 +496,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun showExitConfirmationDialog() {
         remainingSessionTimeBeforePause = remainingSessionTime
+        elapsedTimeBeforePause = elapsedTimeInSeconds
         sessionTimeJob?.cancel()
+        elapsedTimeJob?.cancel()
         handler.removeCallbacksAndMessages(null)
 
         val dialog = AlertDialog.Builder(this)
@@ -496,11 +531,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun updateModeText() {
-        if (isAutomaticMode) {
-            modeInfoTextView.text = getString(R.string.automatic_mode_label)
-        } else {
-            modeInfoTextView.text = getString(R.string.manual_mode_label)
-        }
+        modeInfoTextView.text =
+            if (isAutomaticMode) getString(R.string.automatic_mode_label) else getString(R.string.manual_mode_label)
     }
 
     private fun getOutputDirectory(): File {
