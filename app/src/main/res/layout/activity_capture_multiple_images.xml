@@ -70,7 +70,7 @@
         android:layout_width="50dp"
         android:layout_height="50dp"
         android:background="@drawable/ic_close"
-        android:contentDescription="@string/cancel_dialog_button"
+        android:contentDescription="@string/cancel_button_label"
         app:layout_constraintBottom_toTopOf="@id/label_modeInfo"
         app:layout_constraintEnd_toStartOf="@id/btn_shutter"
         app:layout_constraintStart_toStartOf="parent"
