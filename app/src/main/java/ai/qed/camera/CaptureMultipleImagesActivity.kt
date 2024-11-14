@@ -57,6 +57,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var sessionTimeLabel: TextView
     private lateinit var volumeButton: ImageButton
     private lateinit var soundPool: SoundPool
+    private lateinit var shutterEffectView: View
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -197,6 +198,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         settingsButton = findViewById(R.id.btn_settings)
         sessionTimeLabel = findViewById(R.id.label_sessionTime)
         volumeButton = findViewById(R.id.btn_volume)
+        shutterEffectView = findViewById(R.id.shutter_effect_view)
     }
 
     private fun initializeSoundPool() {
@@ -273,11 +275,24 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         if (isSoundOn) {
             soundPool.play(shutterSoundId, 1f, 1f, 0, 0, 1f)
         }
+        triggerShutterEffect()
 
         imageCapture.takePicture(outputOptions, getExecutor(), object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {}
             override fun onError(exception: ImageCaptureException) {}
         })
+    }
+
+    private fun triggerShutterEffect() {
+        runOnUiThread {
+            shutterEffectView.visibility = View.VISIBLE
+            shutterEffectView.alpha = 1f
+            shutterEffectView.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .withEndAction { shutterEffectView.visibility = View.GONE }
+                .start()
+        }
     }
 
     private fun setupShutterButtonListeners() {
