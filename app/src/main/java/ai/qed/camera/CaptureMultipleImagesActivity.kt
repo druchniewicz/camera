@@ -40,6 +40,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 import java.util.concurrent.Executor
+import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -469,6 +470,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         if (files != null && files.isNotEmpty()) {
             try {
                 ZipOutputStream(zipFile.outputStream().buffered()).use { zipOut ->
+                    zipOut.setLevel(Deflater.NO_COMPRESSION)
                     for (file in files) {
                         FileInputStream(file).use { fis ->
                             val entry = ZipEntry(file.name)
