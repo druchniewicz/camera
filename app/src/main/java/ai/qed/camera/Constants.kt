@@ -11,8 +11,8 @@ const val ZERO = 0
 
 // parameter default values
 const val MODE_PARAM_DEFAULT_VALUE = "automatic"
-const val CAPTURE_INTERVAL_DEFAULT_VALUE = 3
-const val MAX_PHOTO_COUNT_DEFAULT_VALUE = 500
+const val CAPTURE_INTERVAL_DEFAULT_VALUE = 5
+const val MAX_PHOTO_COUNT_DEFAULT_VALUE = ZERO
 const val MAX_SESSION_DURATION_DEFAULT_VALUE = ZERO
 const val PHOTO_FORMAT_DEFAULT_VALUE = "jpg"
 

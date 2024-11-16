@@ -129,7 +129,7 @@
         android:layout_height="50dp"
         android:background="@drawable/ic_close"
         android:contentDescription="@string/cancel_button_label"
-        android:layout_marginEnd="60dp"
+        android:layout_marginEnd="50dp"
         android:layout_marginBottom="20dp" />
 
     <ImageButton
@@ -148,7 +148,7 @@
         android:layout_height="50dp"
         android:background="@drawable/ic_save"
         android:contentDescription="@string/save_dialog_button"
-        android:layout_marginStart="60dp"
+        android:layout_marginStart="50dp"
         android:layout_marginBottom="20dp" />
 
     </LinearLayout>

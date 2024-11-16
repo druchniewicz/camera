@@ -16,6 +16,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -77,6 +78,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var elapsedTimeJob: Job? = null
     private var elapsedTimeInSeconds = 0
     private var elapsedTimeBeforePause: Int? = null
+    private var isUnlimitedPhotoCount = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -178,6 +180,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         photoFormat = getStringOrDefaultFromString(intent.getStringExtra(PHOTO_FORMAT_PARAM_KEY) ?: "", PHOTO_FORMAT_DEFAULT_VALUE)
 
         isUnlimitedSession = maxSessionDuration == ZERO
+        isUnlimitedPhotoCount = maxPhotoCount == ZERO
 
         initializeUIElements()
         initializeSoundPool()
@@ -266,7 +269,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         if (!isAutomaticMode) return
 
         handler.postDelayed({
-            if (photoCounter < maxPhotoCount) {
+            if (isUnlimitedPhotoCount || photoCounter < maxPhotoCount) {
                 takeSinglePicture()
                 takePicturesInSeries()
             } else {
@@ -276,6 +279,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takeSinglePicture() {
+        if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
+            Toast.makeText(this, getString(R.string.max_photo_limit_reached_toast_message), Toast.LENGTH_LONG).show()
+            return
+        }
+
         val photoFile = File(outputDirectory, "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${photoFormat}")
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
@@ -287,10 +295,22 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         imageCapture.takePicture(outputOptions, getExecutor(), object : ImageCapture.OnImageSavedCallback {
             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                 photoCounter++
-                photosTakenTextView.text = getString(R.string.photos_taken_label, photoCounter)
+                updatePhotosTakenLabel()
             }
-            override fun onError(exception: ImageCaptureException) {}
+            override fun onError(exception: ImageCaptureException) {
+                Toast.makeText(this@CaptureMultipleImagesActivity, getString(R.string.take_photo_error_toast_message), Toast.LENGTH_LONG).show()
+            }
         })
+    }
+
+    private fun updatePhotosTakenLabel() {
+        val baseText = getString(R.string.photos_taken_label, photoCounter)
+
+        if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
+            photosTakenTextView.text = "$baseText ${getString(R.string.limit_reached_label)}"
+        } else {
+            photosTakenTextView.text = baseText
+        }
     }
 
     private fun triggerShutterEffect() {
