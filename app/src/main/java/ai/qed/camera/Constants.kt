@@ -21,3 +21,4 @@ const val PHOTO_NAME_PREFIX = "photo_"
 const val PHOTOS_DIRECTORY_NAME = "CameraApp"
 const val CAMERA_PERMISSION_NAME = "android.permission.CAMERA"
 const val REQUEST_CAMERA_PERMISSION_CODE = 1001
+const val REQUEST_LOCATION_PERMISSION_CODE = 1002
