@@ -76,8 +76,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var shutterEffectView: View
     private lateinit var elapsedTimeTextView: TextView
     private lateinit var photosTakenTextView: TextView
-    private lateinit var sensorManager: SensorManager
-    private lateinit var rotationSensor: Sensor
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -100,19 +98,23 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var currentAzimuth: Double = 0.0
     private var currentPitch: Double = 0.0
     private var currentRoll: Double = 0.0
+    private var sensorManager: SensorManager? = null
+    private var rotationSensor: Sensor? = null
 
     private val rotationListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let {
-                val rotationMatrix = FloatArray(9)
-                val orientationAngles = FloatArray(3)
+                if (it.values != null && it.values.size >= 3) {
+                    val rotationMatrix = FloatArray(9)
+                    val orientationAngles = FloatArray(3)
 
-                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                SensorManager.getOrientation(rotationMatrix, orientationAngles)
+                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                    SensorManager.getOrientation(rotationMatrix, orientationAngles)
 
-                currentAzimuth = Math.toDegrees(orientationAngles[0].toDouble())
-                currentPitch = Math.toDegrees(orientationAngles[1].toDouble())
-                currentRoll = Math.toDegrees(orientationAngles[2].toDouble())
+                    currentAzimuth = Math.toDegrees(orientationAngles[0].toDouble())
+                    currentPitch = Math.toDegrees(orientationAngles[1].toDouble())
+                    currentRoll = Math.toDegrees(orientationAngles[2].toDouble())
+                }
             }
         }
 
@@ -124,8 +126,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_capture_multiple_images)
 
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        rotationSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)!!
+        setupRotationSensor()
 
         if (isPermissionGranted(Manifest.permission.CAMERA)) {
             startApplicationWithLocationRequest()
@@ -158,16 +159,18 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(
-            rotationListener,
-            rotationSensor,
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
+        rotationSensor?.let { sensor ->
+            sensorManager?.registerListener(
+                rotationListener,
+                sensor,
+                SensorManager.SENSOR_DELAY_NORMAL
+            )
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(rotationListener)
+        sensorManager?.unregisterListener(rotationListener)
     }
 
     override fun onDestroy() {
@@ -177,6 +180,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         soundPool.release()
         finish()
+    }
+
+    private fun setupRotationSensor() {
+        sensorManager = getSystemService(SENSOR_SERVICE) as? SensorManager
+        if (sensorManager != null) {
+            rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+        }
     }
 
     private fun startApplicationWithLocationRequest() {
