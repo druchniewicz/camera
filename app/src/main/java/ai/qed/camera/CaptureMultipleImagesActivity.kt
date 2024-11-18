@@ -11,6 +11,7 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.location.Location
+import android.media.AudioManager
 import android.media.SoundPool
 import android.net.Uri
 import android.os.Bundle
@@ -423,10 +424,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         )
         val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
-        if (isSoundOn) {
-            soundPool.play(shutterSoundId, 1f, 1f, 0, 0, 1f)
-        }
-        triggerShutterEffect()
+        applyVisualAndAudioEffects()
 
         imageCapture.takePicture(
             outputOptions,
@@ -448,11 +446,23 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             })
     }
 
-    private fun toggleAutoMode() {
-        isAutomaticMode = !isAutomaticMode
-        updateModeText()
+    private fun applyVisualAndAudioEffects() {
+        ensureVolumeIsNotMuted()
+        if (isSoundOn) {
+            soundPool.play(shutterSoundId, 1f, 1f, 0, 0, 1f)
+        }
+        triggerShutterEffect()
+    }
 
-        restartCameraIfNeeded()
+    private fun ensureVolumeIsNotMuted() {
+        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
+        if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                1,
+                0
+            )
+        }
     }
 
     private fun triggerShutterEffect() {
@@ -465,6 +475,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 .withEndAction { shutterEffectView.visibility = View.GONE }
                 .start()
         }
+    }
+
+    private fun toggleAutoMode() {
+        isAutomaticMode = !isAutomaticMode
+        updateModeText()
+
+        restartCameraIfNeeded()
     }
 
     private fun updatePhotosTakenLabel() {
