@@ -17,19 +17,22 @@ object ExifDataSaver {
         roll: Double
     ) {
         try {
-            val exif = ExifInterface(file.absolutePath)
-
             val latitude = location.latitude
             val longitude = location.longitude
-            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertToExifFormat(latitude))
-            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude >= 0) "N" else "S")
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertToExifFormat(longitude))
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude >= 0) "E" else "W")
 
-            val gyroData = "Azimuth: $azimuth, Pitch: $pitch, Roll: $roll"
-            exif.setAttribute(ExifInterface.TAG_USER_COMMENT, gyroData)
+            ExifInterface(file.absolutePath).apply {
+                setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertToExifFormat(latitude))
+                setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude >= 0) "N" else "S")
+                setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertToExifFormat(longitude))
+                setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude >= 0) "E" else "W")
 
-            exif.saveAttributes()
+                setAttribute(
+                    ExifInterface.TAG_USER_COMMENT,
+                    "Azimuth: $azimuth, Pitch: $pitch, Roll: $roll"
+                )
+
+                saveAttributes()
+            }
         } catch (e: IOException) {
             Log.e("CaptureMultiplePhotos", "Failed to save EXIF data", e)
         }
@@ -40,6 +43,7 @@ object ExifDataSaver {
         val degrees = floor(absolute).toInt()
         val minutes = floor((absolute - degrees) * 60).toInt()
         val seconds = ((absolute - degrees - minutes / 60.0) * 3600 * 1000).toInt()
+
         return "$degrees/1,$minutes/1,$seconds/1000"
     }
 }
