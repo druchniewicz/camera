@@ -1,5 +1,6 @@
 package ai.qed.camera
 
+import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import android.Manifest
 import android.app.Activity
 import android.app.ProgressDialog
@@ -21,9 +22,6 @@ import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.ProgressBar
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
@@ -34,7 +32,6 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.view.PreviewView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -57,22 +54,12 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
+    private lateinit var binding: ActivityCaptureMultipleImagesBinding
+
     private lateinit var imageCapture: ImageCapture
     private lateinit var handler: Handler
     private lateinit var outputDirectory: File
-    private lateinit var previewView: PreviewView
-    private lateinit var shutterButton: ImageButton
-    private lateinit var modeInfoTextView: TextView
-    private lateinit var savePhotosButton: ImageButton
-    private lateinit var cancelButton: ImageButton
-    private lateinit var shutterButtonProgressBar: ProgressBar
-    private lateinit var settingsButton: ImageButton
-    private lateinit var sessionTimeLabel: TextView
-    private lateinit var volumeButton: ImageButton
     private lateinit var soundPool: SoundPool
-    private lateinit var shutterEffectView: View
-    private lateinit var elapsedTimeTextView: TextView
-    private lateinit var photosTakenTextView: TextView
 
     private var mode: String = MODE_PARAM_DEFAULT_VALUE
     private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
@@ -121,7 +108,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_capture_multiple_images)
+        binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         setupRotationSensor()
 
@@ -242,7 +230,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         isUnlimitedSession = maxSessionDuration == ZERO
         isUnlimitedPhotoCount = maxPhotoCount == ZERO
 
-        initializeUIElements()
         initializeSoundPool()
 
         outputDirectory = getOutputDirectory()
@@ -255,21 +242,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         setupSaveButtonListener()
         setupCancelButtonListener()
         startElapsedTimeCounter()
-    }
-
-    private fun initializeUIElements() {
-        previewView = findViewById(R.id.preview)
-        modeInfoTextView = findViewById(R.id.label_modeInfo)
-        shutterButton = findViewById(R.id.btn_shutter)
-        savePhotosButton = findViewById(R.id.btn_savePhotos)
-        cancelButton = findViewById(R.id.btn_cancel)
-        shutterButtonProgressBar = findViewById(R.id.progressBar_shutterBtn)
-        settingsButton = findViewById(R.id.btn_settings)
-        sessionTimeLabel = findViewById(R.id.label_sessionTime)
-        volumeButton = findViewById(R.id.btn_volume)
-        shutterEffectView = findViewById(R.id.shutter_effect_view)
-        elapsedTimeTextView = findViewById(R.id.label_elapsedTime)
-        photosTakenTextView = findViewById(R.id.label_photosTaken)
     }
 
     private fun initializeSoundPool() {
@@ -299,7 +271,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(previewView.surfaceProvider)
+                it.setSurfaceProvider(binding.preview.surfaceProvider)
             }
 
             imageCapture = ImageCapture.Builder()
@@ -326,9 +298,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         if (!isUnlimitedSession) {
             setupSessionTimer()
-            sessionTimeLabel.visibility = View.VISIBLE
+            binding.labelSessionTime.visibility = View.VISIBLE
         } else {
-            sessionTimeLabel.visibility = View.GONE
+            binding.labelSessionTime.visibility = View.GONE
         }
     }
 
@@ -340,7 +312,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupSettingsButtonListener() {
-        settingsButton.setOnClickListener {
+        binding.btnSettings.setOnClickListener {
             showSettingsDialog()
         }
     }
@@ -370,7 +342,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupVolumeButtonListener() {
-        volumeButton.setOnClickListener {
+        binding.btnVolume.setOnClickListener {
             isSoundOn = !isSoundOn
             updateVolumeIcon()
         }
@@ -378,38 +350,38 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun updateVolumeIcon() {
         if (isSoundOn) {
-            volumeButton.setImageResource(R.drawable.ic_volume_on)
+            binding.btnVolume.setImageResource(R.drawable.ic_volume_on)
         } else {
-            volumeButton.setImageResource(R.drawable.ic_volume_off)
+            binding.btnVolume.setImageResource(R.drawable.ic_volume_off)
         }
     }
 
     private fun setupShutterButtonListeners() {
-        shutterButton.setOnClickListener {
+        binding.btnShutter.setOnClickListener {
             takeSinglePicture()
         }
 
-        shutterButton.setOnLongClickListener {
-            shutterButtonProgressBar.visibility = View.VISIBLE
-            shutterButtonProgressBar.progress = 0
+        binding.btnShutter.setOnLongClickListener {
+            binding.progressBarShutterBtn.visibility = View.VISIBLE
+            binding.progressBarShutterBtn.progress = 0
 
             shutterJob = CoroutineScope(Dispatchers.Main).launch {
                 for (i in 1..100) {
                     delay(30)
-                    shutterButtonProgressBar.progress = i
-                    shutterButtonProgressBar.invalidate()
+                    binding.progressBarShutterBtn.progress = i
+                    binding.progressBarShutterBtn.invalidate()
                 }
 
                 toggleAutoMode()
-                shutterButtonProgressBar.visibility = View.GONE
+                binding.progressBarShutterBtn.visibility = View.GONE
             }
             true
         }
 
-        shutterButton.setOnTouchListener { _, event ->
+        binding.btnShutter.setOnTouchListener { _, event ->
             if (event.action == android.view.MotionEvent.ACTION_UP) {
                 shutterJob?.cancel()
-                shutterButtonProgressBar.visibility = View.GONE
+                binding.progressBarShutterBtn.visibility = View.GONE
             }
             false
         }
@@ -474,12 +446,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun triggerShutterEffect() {
         runOnUiThread {
-            shutterEffectView.visibility = View.VISIBLE
-            shutterEffectView.alpha = 1f
-            shutterEffectView.animate()
+            binding.shutterEffectView.visibility = View.VISIBLE
+            binding.shutterEffectView.alpha = 1f
+            binding.shutterEffectView.animate()
                 .alpha(0f)
                 .setDuration(200)
-                .withEndAction { shutterEffectView.visibility = View.GONE }
+                .withEndAction { binding.shutterEffectView.visibility = View.GONE }
                 .start()
         }
     }
@@ -495,9 +467,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         val baseText = getString(R.string.photos_taken_label, photoCounter)
 
         if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
-            photosTakenTextView.text = "$baseText ${getString(R.string.limit_reached_label)}"
+            binding.labelPhotosTaken.text = "$baseText ${getString(R.string.limit_reached_label)}"
         } else {
-            photosTakenTextView.text = baseText
+            binding.labelPhotosTaken.text = baseText
         }
     }
 
@@ -557,7 +529,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         remainingSessionTime = maxSessionDuration
         sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
             while (remainingSessionTime >= 0) {
-                sessionTimeLabel.text = getString(R.string.session_time_label, remainingSessionTime)
+                binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
                 delay(1000)
                 remainingSessionTime--
             }
@@ -574,7 +546,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun startElapsedTimeCounter() {
         elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
             while (true) {
-                elapsedTimeTextView.text =
+                binding.labelElapsedTime.text =
                     getString(R.string.elapsed_time_label, elapsedTimeInSeconds)
                 elapsedTimeInSeconds++
                 delay(1000)
@@ -583,7 +555,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupSaveButtonListener() {
-        savePhotosButton.setOnClickListener {
+        binding.btnSavePhotos.setOnClickListener {
             showSaveConfirmationDialog()
         }
     }
@@ -622,7 +594,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
             var currentElapsedTime = elapsedTimeBeforePause ?: elapsedTimeInSeconds
             while (true) {
-                elapsedTimeTextView.text =
+                binding.labelElapsedTime.text =
                     getString(R.string.elapsed_time_label, currentElapsedTime)
                 currentElapsedTime++
                 elapsedTimeInSeconds = currentElapsedTime
@@ -635,7 +607,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
             remainingSessionTime = remainingTime
             while (remainingSessionTime >= 0) {
-                sessionTimeLabel.text = getString(R.string.session_time_label, remainingSessionTime)
+                binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
                 delay(1000)
                 remainingSessionTime--
             }
@@ -709,7 +681,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupCancelButtonListener() {
-        cancelButton.setOnClickListener {
+        binding.btnCancel.setOnClickListener {
             showExitConfirmationDialog()
         }
     }
@@ -744,7 +716,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun updateModeText() {
-        modeInfoTextView.text =
+        binding.labelModeInfo.text =
             if (isAutomaticMode) getString(R.string.automatic_mode_label) else getString(R.string.manual_mode_label)
     }
 
