@@ -14,9 +14,9 @@ class ExifDataSaverTest {
     @Test
     fun `location is correctly converted and saved to exif data`() {
         listOf(
-            LocationTestData(40.748817, -73.985428, exifLatitude = "40/1,44/1,9291/1000", exifLongitude = "73/1,59/1,7495/1000"),
-            LocationTestData(48.858844, 2.294351, exifLatitude = "48/1,51/1,3164/1000", exifLongitude = "2/1,17/1,661/1000"),
-            LocationTestData(-33.868820, 151.209296, exifLatitude = "33/1,52/1,7295/1000", exifLongitude = "151/1,12/1,3346/1000"),
+            LocationTestData(40.748817, -73.985428, exifLatitude = "40/1,44/1,55741/1000", exifLongitude = "73/1,59/1,7540/1000"),
+            LocationTestData(48.858844, 2.294351, exifLatitude = "48/1,51/1,31838/1000", exifLongitude = "2/1,17/1,39663/1000"),
+            LocationTestData(-33.868820, 151.209296, exifLatitude = "33/1,52/1,7751/1000", exifLongitude = "151/1,12/1,33465/1000"),
         ).forEach {
             val photo = File.createTempFile("sample", ".jpg")
 
