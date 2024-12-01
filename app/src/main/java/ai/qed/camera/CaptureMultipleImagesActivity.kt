@@ -11,14 +11,12 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.location.Location
 import android.media.AudioManager
 import android.media.SoundPool
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.EditText
@@ -35,10 +33,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -85,6 +79,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var sensorManager: SensorManager? = null
     private var rotationSensor: Sensor? = null
 
+    private lateinit var locationProvider: LocationProvider
+
     private val rotationListener = object : SensorEventListener {
         override fun onSensorChanged(event: SensorEvent?) {
             event?.let {
@@ -110,7 +106,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
+        locationProvider = LocationProvider(this)
         setupRotationSensor()
 
         if (isPermissionGranted(Manifest.permission.CAMERA)) {
@@ -160,6 +156,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        locationProvider.stop()
         handler.removeCallbacksAndMessages(null)
         sessionTimeJob?.cancel()
         elapsedTimeJob?.cancel()
@@ -206,6 +203,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun startApplication() {
+        locationProvider.start()
+
         mode = getStringOrDefaultFromString(
             intent.getStringExtra(MODE_PARAM_KEY) ?: "",
             MODE_PARAM_DEFAULT_VALUE
@@ -474,40 +473,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun saveGeoExifData(photoFile: File) {
-        getLocation { location ->
-            if (location != null) {
-                ExifDataSaver.saveLocationAttributes(photoFile, location, currentAzimuth, currentPitch, currentRoll)
-            }
-        }
-    }
-
-    private fun getLocation(onLocationFetched: (Location?) -> Unit) {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            val locationRequest = LocationRequest.create().apply {
-                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-                interval = 1000
-                fastestInterval = 500
-                numUpdates = 1
-            }
-
-            val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
-            fusedLocationProvider.requestLocationUpdates(
-                locationRequest,
-                object : LocationCallback() {
-                    override fun onLocationResult(locationResult: LocationResult) {
-                        fusedLocationProvider.removeLocationUpdates(this)
-                        onLocationFetched(locationResult.lastLocation)
-                    }
-                },
-                Looper.getMainLooper()
-            )
-        } else {
-            onLocationFetched(null)
-        }
+        ExifDataSaver.saveLocationAttributes(photoFile, locationProvider.lastKnownLocation, currentAzimuth, currentPitch, currentRoll)
     }
 
     private fun takePicturesInSeries() {
