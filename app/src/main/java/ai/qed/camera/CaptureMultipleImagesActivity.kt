@@ -35,11 +35,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
-import java.util.zip.Deflater
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
@@ -568,37 +563,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            val outputPackage = createPackageWithPhotos()
+            val outputPackage = PhotoZipper.zip(outputDirectory)
             withContext(Dispatchers.Main) {
                 progressDialog.dismiss()
                 returnAnswer(outputPackage)
             }
         }
-    }
-
-    private fun createPackageWithPhotos(): File {
-        val zipFile = File(outputDirectory, "photos_${System.currentTimeMillis()}.zip")
-        val files = outputDirectory.listFiles { file -> file.name.startsWith(PHOTO_NAME_PREFIX) }
-
-        if (files != null && files.isNotEmpty()) {
-            try {
-                ZipOutputStream(zipFile.outputStream().buffered()).use { zipOut ->
-                    zipOut.setLevel(Deflater.NO_COMPRESSION)
-                    for (file in files) {
-                        FileInputStream(file).use { fis ->
-                            val entry = ZipEntry(file.name)
-                            zipOut.putNextEntry(entry)
-                            fis.copyTo(zipOut)
-                            zipOut.closeEntry()
-                        }
-                    }
-                }
-            } catch (e: IOException) {
-                Log.e("CaptureMultiplePhotos", "Error when creating zip package", e)
-            }
-        }
-
-        return zipFile
     }
 
     private fun returnAnswer(file: File) {
