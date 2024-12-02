@@ -38,22 +38,18 @@ import java.io.File
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
+    private lateinit var cameraConfig: CameraConfig
     private val cameraX = CameraX()
 
     private lateinit var handler: Handler
     private lateinit var outputDirectory: File
     private lateinit var soundPool: SoundPool
 
-    private var mode: String = MODE_PARAM_DEFAULT_VALUE
-    private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
-    private var maxPhotoCount: Int = MAX_PHOTO_COUNT_DEFAULT_VALUE
-    private var maxSessionDuration: Int = MAX_SESSION_DURATION_DEFAULT_VALUE
-    private var photoFormat: String = PHOTO_FORMAT_DEFAULT_VALUE
     private var photoCounter = 0
     private var isAutomaticMode = false
     private var shutterJob: Job? = null
     private var sessionTimeJob: Job? = null
-    private var remainingSessionTime = maxSessionDuration
+    private var remainingSessionTime = 0
     private var isUnlimitedSession = false
     private var isSoundOn = true
     private var shutterSoundId: Int = 0
@@ -192,31 +188,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun startApplication() {
+        cameraConfig = toCameraConfig(intent)
         locationProvider.start()
 
-        mode = getStringOrDefaultFromString(
-            intent.getStringExtra(MODE_PARAM_KEY) ?: "",
-            MODE_PARAM_DEFAULT_VALUE
-        )
-        captureInterval = getIntegerOrDefaultFromString(
-            intent.getStringExtra(CAPTURE_INTERVAL_PARAM_KEY) ?: "",
-            CAPTURE_INTERVAL_DEFAULT_VALUE
-        )
-        maxPhotoCount = getIntegerOrDefaultFromString(
-            intent.getStringExtra(MAX_PHOTO_COUNT_PARAM_KEY) ?: "",
-            MAX_PHOTO_COUNT_DEFAULT_VALUE
-        )
-        maxSessionDuration = getIntegerOrDefaultFromString(
-            intent.getStringExtra(MAX_SESSION_DURATION_PARAM_KEY) ?: "",
-            MAX_SESSION_DURATION_DEFAULT_VALUE
-        )
-        photoFormat = getStringOrDefaultFromString(
-            intent.getStringExtra(PHOTO_FORMAT_PARAM_KEY) ?: "",
-            PHOTO_FORMAT_DEFAULT_VALUE
-        )
-
-        isUnlimitedSession = maxSessionDuration == ZERO
-        isUnlimitedPhotoCount = maxPhotoCount == ZERO
+        isUnlimitedSession = cameraConfig.maxSessionDuration == ZERO
+        isUnlimitedPhotoCount = cameraConfig.maxPhotoCount == ZERO
 
         initializeSoundPool()
 
@@ -258,7 +234,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             this,
             binding.preview,
             {
-                isAutomaticMode = mode == MODE_PARAM_DEFAULT_VALUE
+                isAutomaticMode = cameraConfig.mode == MODE_PARAM_DEFAULT_VALUE
 
                 updateModeText()
 
@@ -297,7 +273,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         val captureIntervalInput = dialogView.findViewById<EditText>(R.id.input_captureInterval)
         val modeSwitch = dialogView.findViewById<SwitchCompat>(R.id.switch_mode)
 
-        captureIntervalInput.setText(captureInterval.toString())
+        captureIntervalInput.setText(cameraConfig.captureInterval.toString())
         modeSwitch.isChecked = isAutomaticMode
 
         val dialog = AlertDialog.Builder(this)
@@ -305,8 +281,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton(getString(R.string.save_dialog_button)) { _, _ ->
                 isAutomaticMode = modeSwitch.isChecked
-                captureInterval =
-                    captureIntervalInput.text.toString().toIntOrNull() ?: captureInterval
+                cameraConfig.captureInterval =
+                    captureIntervalInput.text.toString().toIntOrNull() ?: cameraConfig.captureInterval
                 updateModeText()
                 restartCameraIfNeeded()
             }
@@ -363,7 +339,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takeSinglePicture() {
-        if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
+        if (!isUnlimitedPhotoCount && photoCounter >= cameraConfig.maxPhotoCount) {
             Toast.makeText(
                 this,
                 getString(R.string.max_photo_limit_reached_toast_message),
@@ -374,7 +350,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         val photoFile = File(
             outputDirectory,
-            "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${photoFormat}"
+            "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
         )
 
         applyVisualAndAudioEffects()
@@ -437,7 +413,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun updatePhotosTakenLabel() {
         val baseText = getString(R.string.photos_taken_label, photoCounter)
 
-        if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
+        if (!isUnlimitedPhotoCount && photoCounter >= cameraConfig.maxPhotoCount) {
             binding.labelPhotosTaken.text = "$baseText ${getString(R.string.limit_reached_label)}"
         } else {
             binding.labelPhotosTaken.text = baseText
@@ -454,17 +430,17 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         if (!isAutomaticMode) return
 
         handler.postDelayed({
-            if (isUnlimitedPhotoCount || photoCounter < maxPhotoCount) {
+            if (isUnlimitedPhotoCount || photoCounter < cameraConfig.maxPhotoCount) {
                 takeSinglePicture()
                 takePicturesInSeries()
             } else {
                 handler.removeCallbacksAndMessages(null)
             }
-        }, captureInterval * 1000L)
+        }, cameraConfig.captureInterval * 1000L)
     }
 
     private fun setupSessionTimer() {
-        remainingSessionTime = maxSessionDuration
+        remainingSessionTime = cameraConfig.maxSessionDuration
         sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
             while (remainingSessionTime >= 0) {
                 binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
@@ -631,19 +607,5 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun updateModeText() {
         binding.labelModeInfo.text =
             if (isAutomaticMode) getString(R.string.automatic_mode_label) else getString(R.string.manual_mode_label)
-    }
-
-    private fun getIntegerOrDefaultFromString(value: String, defaultValue: Int): Int {
-        return if (value.isEmpty()) {
-            defaultValue
-        } else {
-            value.toIntOrNull() ?: defaultValue
-        }
-    }
-
-    private fun getStringOrDefaultFromString(value: String, defaultValue: String): String {
-        return value.ifEmpty {
-            defaultValue
-        }
     }
 }
