@@ -4,10 +4,7 @@ import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.ui.ExitSessionDialog
 import ai.qed.camera.ui.SaveSessionDialog
 import android.Manifest
-import android.app.Activity
 import android.app.ProgressDialog
-import android.content.ClipData
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -15,7 +12,6 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.SoundPool
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -29,7 +25,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -536,30 +531,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             val outputPackage = PhotoZipper.zip(outputDirectory)
             withContext(Dispatchers.Main) {
                 progressDialog.dismiss()
-                returnAnswer(outputPackage)
+                ResultIntentHelper.returnIntent(this@CaptureMultipleImagesActivity, outputPackage)
             }
-        }
-    }
-
-    private fun returnAnswer(file: File) {
-        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
-        val uri = getUriForFile(file)
-        addItem(intent, uri)
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        setResult(Activity.RESULT_OK, intent)
-        finish()
-    }
-
-    private fun getUriForFile(file: File): Uri {
-        return FileProvider.getUriForFile(applicationContext, "ai.qed.camera.fileprovider", file)
-    }
-
-    private fun addItem(intent: Intent, uri: Uri) {
-        intent.putExtra("value", uri)
-        if (intent.clipData == null) {
-            intent.clipData = ClipData.newRawUri(null, uri)
-        } else {
-            intent.clipData?.addItem(ClipData.Item(uri))
         }
     }
 
