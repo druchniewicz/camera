@@ -25,11 +25,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -42,15 +37,14 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
-import java.util.concurrent.Executor
 import java.util.zip.Deflater
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
+    private val cameraX = CameraX()
 
-    private lateinit var imageCapture: ImageCapture
     private lateinit var handler: Handler
     private lateinit var outputDirectory: File
     private lateinit var soundPool: SoundPool
@@ -265,24 +259,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(binding.preview.surfaceProvider)
-            }
-
-            imageCapture = ImageCapture.Builder()
-                .setTargetRotation(windowManager.defaultDisplay.rotation)
-                .build()
-
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-
+        cameraX.initialize(
+            this,
+            binding.preview,
+            {
                 isAutomaticMode = mode == MODE_PARAM_DEFAULT_VALUE
 
                 updateModeText()
@@ -290,10 +270,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 if (isAutomaticMode) {
                     startImageCapture()
                 }
-            } catch (ex: Exception) {
+            },
+            {
                 Log.e("CameraBinding", "Something went wrong during camera binding")
             }
-        }, ContextCompat.getMainExecutor(this))
+        )
 
         if (!isUnlimitedSession) {
             setupSessionTimer()
@@ -400,28 +381,24 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             outputDirectory,
             "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${photoFormat}"
         )
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         applyVisualAndAudioEffects()
 
-        imageCapture.takePicture(
-            outputOptions,
-            getExecutor(),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    photoCounter++
-                    updatePhotosTakenLabel()
-                    saveGeoExifData(photoFile)
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    Toast.makeText(
-                        this@CaptureMultipleImagesActivity,
-                        getString(R.string.take_photo_error_toast_message),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            })
+        cameraX.takePicture(
+            photoFile.absolutePath,
+            {
+                photoCounter++
+                updatePhotosTakenLabel()
+                saveGeoExifData(photoFile)
+            },
+            {
+                Toast.makeText(
+                    this@CaptureMultipleImagesActivity,
+                    getString(R.string.take_photo_error_toast_message),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        )
     }
 
     private fun applyVisualAndAudioEffects() {
@@ -698,9 +675,5 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         return value.ifEmpty {
             defaultValue
         }
-    }
-
-    private fun getExecutor(): Executor {
-        return ContextCompat.getMainExecutor(this)
     }
 }
