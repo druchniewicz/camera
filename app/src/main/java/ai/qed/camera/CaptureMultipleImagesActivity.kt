@@ -1,6 +1,8 @@
 package ai.qed.camera
 
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
+import ai.qed.camera.ui.ExitSessionDialog
+import ai.qed.camera.ui.SaveSessionDialog
 import android.Manifest
 import android.app.Activity
 import android.app.ProgressDialog
@@ -481,19 +483,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         handler.removeCallbacksAndMessages(null)
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.save_dialog_title))
-            .setMessage(getString(R.string.save_dialog_message))
-            .setPositiveButton(getString(R.string.yes_button_label)) { _, _ ->
-                handleSaveButton()
-            }
-            .setNegativeButton(getString(R.string.cancel_button_label)) { dialog, _ ->
-                dialog.dismiss()
-                resumeSession()
-            }
-            .create()
-
-        dialog.show()
+        SaveSessionDialog.show(
+            this,
+            { handleSaveButton() },
+            { resumeSession() }
+        )
     }
 
     private fun resumeSession() {
@@ -582,19 +576,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         handler.removeCallbacksAndMessages(null)
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.exit_dialog_title))
-            .setMessage(getString(R.string.exit_dialog_message))
-            .setPositiveButton(getString(R.string.yes_button_label)) { _, _ ->
-                finish()
-            }
-            .setNegativeButton(getString(R.string.cancel_button_label)) { dialog, _ ->
-                dialog.dismiss()
-                resumeSession()
-            }
-            .create()
-
-        dialog.show()
+        ExitSessionDialog.show(
+            this,
+            { finish() },
+            { resumeSession() }
+        )
     }
 
     private fun restartCameraIfNeeded() {
