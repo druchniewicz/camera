@@ -8,16 +8,12 @@ import ai.qed.camera.MODE_PARAM_DEFAULT_VALUE
 import ai.qed.camera.PHOTO_NAME_PREFIX
 import ai.qed.camera.PhotoZipper
 import ai.qed.camera.R
-import ai.qed.camera.REQUEST_CAMERA_PERMISSION_CODE
-import ai.qed.camera.REQUEST_LOCATION_PERMISSION_CODE
 import ai.qed.camera.ResultIntentHelper
 import ai.qed.camera.ZERO
 import ai.qed.camera.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.toCameraConfig
-import android.Manifest
 import android.app.ProgressDialog
-import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.SoundPool
@@ -29,8 +25,6 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -73,33 +67,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
         cameraX = CameraX(locationProvider, deviceOrientationProvider)
 
-        if (isPermissionGranted(Manifest.permission.CAMERA)) {
-            startApplicationWithLocationRequest()
-        } else {
-            requestCameraPermission()
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        when (requestCode) {
-            REQUEST_CAMERA_PERMISSION_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    requestLocationPermission()
-                } else {
-                    finish()
-                }
-            }
-
-            REQUEST_LOCATION_PERMISSION_CODE -> {
-                startApplication()
-            }
-        }
+        startApplication()
     }
 
     override fun onResume() {
@@ -120,37 +88,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         soundPool.release()
         finish()
-    }
-
-    private fun startApplicationWithLocationRequest() {
-        if (isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            startApplication()
-        } else {
-            requestLocationPermission()
-        }
-    }
-
-    private fun isPermissionGranted(permission: String): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            permission
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            REQUEST_CAMERA_PERMISSION_CODE
-        )
-    }
-
-    private fun requestLocationPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            REQUEST_LOCATION_PERMISSION_CODE
-        )
     }
 
     private fun startApplication() {
