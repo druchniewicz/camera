@@ -6,9 +6,6 @@ import ai.qed.camera.ui.SaveSessionDialog
 import android.Manifest
 import android.app.ProgressDialog
 import android.content.pm.PackageManager
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.SoundPool
@@ -55,33 +52,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var elapsedTimeInSeconds = 0
     private var elapsedTimeBeforePause: Int? = null
     private var isUnlimitedPhotoCount = false
-    private var currentAzimuth: Double = 0.0
-    private var currentPitch: Double = 0.0
-    private var currentRoll: Double = 0.0
-    private var sensorManager: SensorManager? = null
-    private var rotationSensor: Sensor? = null
 
     private lateinit var locationProvider: LocationProvider
-
-    private val rotationListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent?) {
-            event?.let {
-                if (it.values != null && it.values.size >= 3) {
-                    val rotationMatrix = FloatArray(9)
-                    val orientationAngles = FloatArray(3)
-
-                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                    SensorManager.getOrientation(rotationMatrix, orientationAngles)
-
-                    currentAzimuth = Math.toDegrees(orientationAngles[0].toDouble())
-                    currentPitch = Math.toDegrees(orientationAngles[1].toDouble())
-                    currentRoll = Math.toDegrees(orientationAngles[2].toDouble())
-                }
-            }
-        }
-
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    }
+    private lateinit var deviceOrientationProvider: DeviceOrientationProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -89,7 +62,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
         locationProvider = LocationProvider(this)
-        setupRotationSensor()
+        deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
 
         if (isPermissionGranted(Manifest.permission.CAMERA)) {
             startApplicationWithLocationRequest()
@@ -122,18 +95,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        rotationSensor?.let { sensor ->
-            sensorManager?.registerListener(
-                rotationListener,
-                sensor,
-                SensorManager.SENSOR_DELAY_NORMAL
-            )
-        }
+        deviceOrientationProvider.start()
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager?.unregisterListener(rotationListener)
+        deviceOrientationProvider.stop()
     }
 
     override fun onDestroy() {
@@ -144,13 +111,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         soundPool.release()
         finish()
-    }
-
-    private fun setupRotationSensor() {
-        sensorManager = getSystemService(SENSOR_SERVICE) as? SensorManager
-        if (sensorManager != null) {
-            rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-        }
     }
 
     private fun startApplicationWithLocationRequest() {
@@ -418,7 +378,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun saveGeoExifData(photoFile: File) {
-        ExifDataSaver.saveLocationAttributes(photoFile, locationProvider.lastKnownLocation, currentAzimuth, currentPitch, currentRoll)
+        ExifDataSaver.saveLocationAttributes(
+            photoFile,
+            locationProvider.lastKnownLocation,
+            deviceOrientationProvider.azimuth,
+            deviceOrientationProvider.pitch,
+            deviceOrientationProvider.roll
+        )
     }
 
     private fun takePicturesInSeries() {
