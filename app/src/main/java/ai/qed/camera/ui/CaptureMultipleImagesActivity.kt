@@ -63,6 +63,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.btnShutter.adoptToEgeToEdge()
         locationProvider = LocationProvider(this)
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
         cameraX = CameraX(locationProvider, deviceOrientationProvider)
