@@ -36,7 +36,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private val cameraX = CameraX()
 
     private lateinit var handler: Handler
-    private lateinit var outputDirectory: File
     private lateinit var soundPool: SoundPool
 
     private var photoCounter = 0
@@ -153,8 +152,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         initializeSoundPool()
 
-        outputDirectory = getOutputDirectory()
-        clearOutputDirectory()
+        clearFilesDir()
 
         startCamera()
         setupSettingsButtonListener()
@@ -168,22 +166,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun initializeSoundPool() {
         soundPool = SoundPool.Builder().setMaxStreams(1).build()
         shutterSoundId = soundPool.load(this, R.raw.camera_shutter_sound, 1)
-    }
-
-    private fun getOutputDirectory(): File {
-        val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, PHOTOS_DIRECTORY_NAME).apply { mkdirs() }
-        }
-
-        return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
-    }
-
-    private fun clearOutputDirectory() {
-        if (outputDirectory.exists()) {
-            outputDirectory.listFiles()?.forEach { file ->
-                file.delete()
-            }
-        }
     }
 
     private fun startCamera() {
@@ -306,7 +288,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         val photoFile = File(
-            outputDirectory,
+            filesDir,
             "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
         )
 
@@ -494,7 +476,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            val outputPackage = PhotoZipper.zip(outputDirectory)
+            val outputPackage = PhotoZipper.zip(filesDir)
             withContext(Dispatchers.Main) {
                 progressDialog.dismiss()
                 ResultIntentHelper.returnIntent(this@CaptureMultipleImagesActivity, outputPackage)
