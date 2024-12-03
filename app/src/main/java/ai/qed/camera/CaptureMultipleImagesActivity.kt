@@ -31,7 +31,6 @@ import java.io.File
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
     private lateinit var cameraConfig: CameraConfig
-    private val cameraX = CameraX()
 
     private lateinit var handler: Handler
     private lateinit var soundPool: SoundPool
@@ -52,6 +51,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private lateinit var locationProvider: LocationProvider
     private lateinit var deviceOrientationProvider: DeviceOrientationProvider
+    private lateinit var cameraX: CameraX
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
@@ -60,6 +60,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         setContentView(binding.root)
         locationProvider = LocationProvider(this)
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
+        cameraX = CameraX(locationProvider, deviceOrientationProvider)
 
         if (isPermissionGranted(Manifest.permission.CAMERA)) {
             startApplicationWithLocationRequest()
@@ -286,7 +287,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             {
                 photoCounter++
                 updatePhotosTakenLabel()
-                saveGeoExifData(photoFile)
             },
             {
                 Toast.makeText(
@@ -344,16 +344,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         } else {
             binding.labelPhotosTaken.text = baseText
         }
-    }
-
-    private fun saveGeoExifData(photoFile: File) {
-        ExifDataSaver.saveLocationAttributes(
-            photoFile,
-            locationProvider.lastKnownLocation,
-            deviceOrientationProvider.azimuth,
-            deviceOrientationProvider.pitch,
-            deviceOrientationProvider.roll
-        )
     }
 
     private fun takePicturesInSeries() {

@@ -11,7 +11,10 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import java.io.File
 
-class CameraX {
+class CameraX(
+    private val locationProvider: LocationProvider,
+    private val deviceOrientationProvider: DeviceOrientationProvider
+) {
     private var activity: ComponentActivity? = null
     private lateinit var imageCapture: ImageCapture
 
@@ -29,7 +32,7 @@ class CameraX {
                 val cameraProvider = cameraProviderFuture.get()
 
                 val preview = Preview.Builder().build()
-                preview.setSurfaceProvider((previewView as PreviewView).surfaceProvider)
+                preview.surfaceProvider = (previewView as PreviewView).surfaceProvider
 
                 imageCapture = ImageCapture.Builder()
                     .setTargetRotation(activity.windowManager.defaultDisplay.rotation)
@@ -70,12 +73,19 @@ class CameraX {
                 outputFileOptions,
                 ContextCompat.getMainExecutor(context),
                 object : ImageCapture.OnImageSavedCallback {
-                    override fun onError(error: ImageCaptureException) {
-                        onImageSaveError()
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                        ExifDataSaver.saveLocationAttributes(
+                            outputFile,
+                            locationProvider.lastKnownLocation,
+                            deviceOrientationProvider.azimuth,
+                            deviceOrientationProvider.pitch,
+                            deviceOrientationProvider.roll
+                        )
+                        onImageSaved()
                     }
 
-                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        onImageSaved()
+                    override fun onError(error: ImageCaptureException) {
+                        onImageSaveError()
                     }
                 }
             )
