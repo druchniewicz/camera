@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Camera</string>
+    <string name="app_name">QED Camera</string>
     <string name="automatic_mode_label">AUTOMATIC</string>
     <string name="manual_mode_label">MANUAL</string>
     <string name="saving_toast_message">Saving...</string>
