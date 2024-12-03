@@ -1,9 +1,20 @@
-package ai.qed.camera
+package ai.qed.camera.ui
 
+import ai.qed.camera.CameraConfig
+import ai.qed.camera.CameraX
+import ai.qed.camera.DeviceOrientationProvider
+import ai.qed.camera.LocationProvider
+import ai.qed.camera.MODE_PARAM_DEFAULT_VALUE
+import ai.qed.camera.PHOTO_NAME_PREFIX
+import ai.qed.camera.PhotoZipper
+import ai.qed.camera.R
+import ai.qed.camera.REQUEST_CAMERA_PERMISSION_CODE
+import ai.qed.camera.REQUEST_LOCATION_PERMISSION_CODE
+import ai.qed.camera.ResultIntentHelper
+import ai.qed.camera.ZERO
+import ai.qed.camera.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
-import ai.qed.camera.ui.ExitSessionDialog
-import ai.qed.camera.ui.SaveSessionDialog
-import ai.qed.camera.ui.SettingsDialog
+import ai.qed.camera.toCameraConfig
 import android.Manifest
 import android.app.ProgressDialog
 import android.content.pm.PackageManager
@@ -277,7 +288,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         val photoFile = File(
             filesDir,
-            "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
+            "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
         )
 
         applyVisualAndAudioEffects()

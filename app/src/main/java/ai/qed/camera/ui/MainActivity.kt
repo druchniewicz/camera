@@ -1,5 +1,6 @@
-package ai.qed.camera
+package ai.qed.camera.ui
 
+import ai.qed.camera.R
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 

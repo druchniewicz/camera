@@ -22,7 +22,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat">
             <intent-filter>
@@ -32,7 +32,7 @@
         </activity>
 
         <activity
-            android:name=".CaptureMultipleImagesActivity"
+            android:name=".ui.CaptureMultipleImagesActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
             <intent-filter>
