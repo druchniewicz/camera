@@ -11,20 +11,25 @@ import kotlin.math.floor
 object ExifDataSaver {
     fun saveLocationAttributes(
         file: File,
-        location: Location,
+        location: Location?,
         azimuth: Double,
         pitch: Double,
         roll: Double
     ) {
         try {
-            val latitude = location.latitude
-            val longitude = location.longitude
+            val latitude = location?.latitude
+            val longitude = location?.longitude
 
             ExifInterface(file.absolutePath).apply {
-                setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertToExifFormat(latitude))
-                setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude >= 0) "N" else "S")
-                setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertToExifFormat(longitude))
-                setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude >= 0) "E" else "W")
+                if (latitude != null) {
+                    setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertToExifFormat(latitude))
+                    setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude >= 0) "N" else "S")
+                }
+
+                if (longitude != null) {
+                    setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertToExifFormat(longitude))
+                    setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude >= 0) "E" else "W")
+                }
 
                 setAttribute(
                     ExifInterface.TAG_USER_COMMENT,

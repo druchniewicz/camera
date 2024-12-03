@@ -1,24 +1,17 @@
 package ai.qed.camera
 
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
+import ai.qed.camera.ui.ExitSessionDialog
+import ai.qed.camera.ui.SaveSessionDialog
 import android.Manifest
-import android.app.Activity
 import android.app.ProgressDialog
-import android.content.ClipData
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.location.Location
 import android.media.AudioManager
 import android.media.SoundPool
-import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
-import android.os.Looper
 import android.util.Log
 import android.view.View
 import android.widget.EditText
@@ -27,18 +20,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.Preview
-import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
-import com.google.android.gms.location.LocationCallback
-import com.google.android.gms.location.LocationRequest
-import com.google.android.gms.location.LocationResult
-import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -46,31 +29,20 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
-import java.util.concurrent.Executor
-import java.util.zip.Deflater
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
+    private lateinit var cameraConfig: CameraConfig
+    private val cameraX = CameraX()
 
-    private lateinit var imageCapture: ImageCapture
     private lateinit var handler: Handler
-    private lateinit var outputDirectory: File
     private lateinit var soundPool: SoundPool
 
-    private var mode: String = MODE_PARAM_DEFAULT_VALUE
-    private var captureInterval: Int = CAPTURE_INTERVAL_DEFAULT_VALUE
-    private var maxPhotoCount: Int = MAX_PHOTO_COUNT_DEFAULT_VALUE
-    private var maxSessionDuration: Int = MAX_SESSION_DURATION_DEFAULT_VALUE
-    private var photoFormat: String = PHOTO_FORMAT_DEFAULT_VALUE
     private var photoCounter = 0
     private var isAutomaticMode = false
     private var shutterJob: Job? = null
     private var sessionTimeJob: Job? = null
-    private var remainingSessionTime = maxSessionDuration
+    private var remainingSessionTime = 0
     private var isUnlimitedSession = false
     private var isSoundOn = true
     private var shutterSoundId: Int = 0
@@ -79,39 +51,17 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private var elapsedTimeInSeconds = 0
     private var elapsedTimeBeforePause: Int? = null
     private var isUnlimitedPhotoCount = false
-    private var currentAzimuth: Double = 0.0
-    private var currentPitch: Double = 0.0
-    private var currentRoll: Double = 0.0
-    private var sensorManager: SensorManager? = null
-    private var rotationSensor: Sensor? = null
 
-    private val rotationListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent?) {
-            event?.let {
-                if (it.values != null && it.values.size >= 3) {
-                    val rotationMatrix = FloatArray(9)
-                    val orientationAngles = FloatArray(3)
-
-                    SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                    SensorManager.getOrientation(rotationMatrix, orientationAngles)
-
-                    currentAzimuth = Math.toDegrees(orientationAngles[0].toDouble())
-                    currentPitch = Math.toDegrees(orientationAngles[1].toDouble())
-                    currentRoll = Math.toDegrees(orientationAngles[2].toDouble())
-                }
-            }
-        }
-
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    }
+    private lateinit var locationProvider: LocationProvider
+    private lateinit var deviceOrientationProvider: DeviceOrientationProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        setupRotationSensor()
+        locationProvider = LocationProvider(this)
+        deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
 
         if (isPermissionGranted(Manifest.permission.CAMERA)) {
             startApplicationWithLocationRequest()
@@ -144,34 +94,22 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        rotationSensor?.let { sensor ->
-            sensorManager?.registerListener(
-                rotationListener,
-                sensor,
-                SensorManager.SENSOR_DELAY_NORMAL
-            )
-        }
+        deviceOrientationProvider.start()
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager?.unregisterListener(rotationListener)
+        deviceOrientationProvider.stop()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        locationProvider.stop()
         handler.removeCallbacksAndMessages(null)
         sessionTimeJob?.cancel()
         elapsedTimeJob?.cancel()
         soundPool.release()
         finish()
-    }
-
-    private fun setupRotationSensor() {
-        sensorManager = getSystemService(SENSOR_SERVICE) as? SensorManager
-        if (sensorManager != null) {
-            rotationSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-        }
     }
 
     private fun startApplicationWithLocationRequest() {
@@ -206,34 +144,15 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun startApplication() {
-        mode = getStringOrDefaultFromString(
-            intent.getStringExtra(MODE_PARAM_KEY) ?: "",
-            MODE_PARAM_DEFAULT_VALUE
-        )
-        captureInterval = getIntegerOrDefaultFromString(
-            intent.getStringExtra(CAPTURE_INTERVAL_PARAM_KEY) ?: "",
-            CAPTURE_INTERVAL_DEFAULT_VALUE
-        )
-        maxPhotoCount = getIntegerOrDefaultFromString(
-            intent.getStringExtra(MAX_PHOTO_COUNT_PARAM_KEY) ?: "",
-            MAX_PHOTO_COUNT_DEFAULT_VALUE
-        )
-        maxSessionDuration = getIntegerOrDefaultFromString(
-            intent.getStringExtra(MAX_SESSION_DURATION_PARAM_KEY) ?: "",
-            MAX_SESSION_DURATION_DEFAULT_VALUE
-        )
-        photoFormat = getStringOrDefaultFromString(
-            intent.getStringExtra(PHOTO_FORMAT_PARAM_KEY) ?: "",
-            PHOTO_FORMAT_DEFAULT_VALUE
-        )
+        cameraConfig = toCameraConfig(intent)
+        locationProvider.start()
 
-        isUnlimitedSession = maxSessionDuration == ZERO
-        isUnlimitedPhotoCount = maxPhotoCount == ZERO
+        isUnlimitedSession = cameraConfig.maxSessionDuration == ZERO
+        isUnlimitedPhotoCount = cameraConfig.maxPhotoCount == ZERO
 
         initializeSoundPool()
 
-        outputDirectory = getOutputDirectory()
-        clearOutputDirectory()
+        clearFilesDir()
 
         startCamera()
         setupSettingsButtonListener()
@@ -249,52 +168,23 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         shutterSoundId = soundPool.load(this, R.raw.camera_shutter_sound, 1)
     }
 
-    private fun getOutputDirectory(): File {
-        val mediaDir = externalMediaDirs.firstOrNull()?.let {
-            File(it, PHOTOS_DIRECTORY_NAME).apply { mkdirs() }
-        }
-
-        return if (mediaDir != null && mediaDir.exists()) mediaDir else filesDir
-    }
-
-    private fun clearOutputDirectory() {
-        if (outputDirectory.exists()) {
-            outputDirectory.listFiles()?.forEach { file ->
-                file.delete()
-            }
-        }
-    }
-
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-
-        cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(binding.preview.surfaceProvider)
-            }
-
-            imageCapture = ImageCapture.Builder()
-                .setTargetRotation(windowManager.defaultDisplay.rotation)
-                .build()
-
-            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageCapture)
-
-                isAutomaticMode = mode == MODE_PARAM_DEFAULT_VALUE
+        cameraX.initialize(
+            this,
+            binding.preview,
+            {
+                isAutomaticMode = cameraConfig.mode == MODE_PARAM_DEFAULT_VALUE
 
                 updateModeText()
 
                 if (isAutomaticMode) {
                     startImageCapture()
                 }
-            } catch (ex: Exception) {
+            },
+            {
                 Log.e("CameraBinding", "Something went wrong during camera binding")
             }
-        }, ContextCompat.getMainExecutor(this))
+        )
 
         if (!isUnlimitedSession) {
             setupSessionTimer()
@@ -322,7 +212,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         val captureIntervalInput = dialogView.findViewById<EditText>(R.id.input_captureInterval)
         val modeSwitch = dialogView.findViewById<SwitchCompat>(R.id.switch_mode)
 
-        captureIntervalInput.setText(captureInterval.toString())
+        captureIntervalInput.setText(cameraConfig.captureInterval.toString())
         modeSwitch.isChecked = isAutomaticMode
 
         val dialog = AlertDialog.Builder(this)
@@ -330,8 +220,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton(getString(R.string.save_dialog_button)) { _, _ ->
                 isAutomaticMode = modeSwitch.isChecked
-                captureInterval =
-                    captureIntervalInput.text.toString().toIntOrNull() ?: captureInterval
+                cameraConfig.captureInterval =
+                    captureIntervalInput.text.toString().toIntOrNull() ?: cameraConfig.captureInterval
                 updateModeText()
                 restartCameraIfNeeded()
             }
@@ -388,7 +278,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takeSinglePicture() {
-        if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
+        if (!isUnlimitedPhotoCount && photoCounter >= cameraConfig.maxPhotoCount) {
             Toast.makeText(
                 this,
                 getString(R.string.max_photo_limit_reached_toast_message),
@@ -398,31 +288,27 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         val photoFile = File(
-            outputDirectory,
-            "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${photoFormat}"
+            filesDir,
+            "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
         )
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
 
         applyVisualAndAudioEffects()
 
-        imageCapture.takePicture(
-            outputOptions,
-            getExecutor(),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    photoCounter++
-                    updatePhotosTakenLabel()
-                    saveGeoExifData(photoFile)
-                }
-
-                override fun onError(exception: ImageCaptureException) {
-                    Toast.makeText(
-                        this@CaptureMultipleImagesActivity,
-                        getString(R.string.take_photo_error_toast_message),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            })
+        cameraX.takePicture(
+            photoFile.absolutePath,
+            {
+                photoCounter++
+                updatePhotosTakenLabel()
+                saveGeoExifData(photoFile)
+            },
+            {
+                Toast.makeText(
+                    this@CaptureMultipleImagesActivity,
+                    getString(R.string.take_photo_error_toast_message),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        )
     }
 
     private fun applyVisualAndAudioEffects() {
@@ -466,7 +352,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun updatePhotosTakenLabel() {
         val baseText = getString(R.string.photos_taken_label, photoCounter)
 
-        if (!isUnlimitedPhotoCount && photoCounter >= maxPhotoCount) {
+        if (!isUnlimitedPhotoCount && photoCounter >= cameraConfig.maxPhotoCount) {
             binding.labelPhotosTaken.text = "$baseText ${getString(R.string.limit_reached_label)}"
         } else {
             binding.labelPhotosTaken.text = baseText
@@ -474,40 +360,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun saveGeoExifData(photoFile: File) {
-        getLocation { location ->
-            if (location != null) {
-                ExifDataSaver.saveLocationAttributes(photoFile, location, currentAzimuth, currentPitch, currentRoll)
-            }
-        }
-    }
-
-    private fun getLocation(onLocationFetched: (Location?) -> Unit) {
-        if (ContextCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
-            val locationRequest = LocationRequest.create().apply {
-                priority = LocationRequest.PRIORITY_HIGH_ACCURACY
-                interval = 1000
-                fastestInterval = 500
-                numUpdates = 1
-            }
-
-            val fusedLocationProvider = LocationServices.getFusedLocationProviderClient(this)
-            fusedLocationProvider.requestLocationUpdates(
-                locationRequest,
-                object : LocationCallback() {
-                    override fun onLocationResult(locationResult: LocationResult) {
-                        fusedLocationProvider.removeLocationUpdates(this)
-                        onLocationFetched(locationResult.lastLocation)
-                    }
-                },
-                Looper.getMainLooper()
-            )
-        } else {
-            onLocationFetched(null)
-        }
+        ExifDataSaver.saveLocationAttributes(
+            photoFile,
+            locationProvider.lastKnownLocation,
+            deviceOrientationProvider.azimuth,
+            deviceOrientationProvider.pitch,
+            deviceOrientationProvider.roll
+        )
     }
 
     private fun takePicturesInSeries() {
@@ -516,17 +375,17 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         if (!isAutomaticMode) return
 
         handler.postDelayed({
-            if (isUnlimitedPhotoCount || photoCounter < maxPhotoCount) {
+            if (isUnlimitedPhotoCount || photoCounter < cameraConfig.maxPhotoCount) {
                 takeSinglePicture()
                 takePicturesInSeries()
             } else {
                 handler.removeCallbacksAndMessages(null)
             }
-        }, captureInterval * 1000L)
+        }, cameraConfig.captureInterval * 1000L)
     }
 
     private fun setupSessionTimer() {
-        remainingSessionTime = maxSessionDuration
+        remainingSessionTime = cameraConfig.maxSessionDuration
         sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
             while (remainingSessionTime >= 0) {
                 binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
@@ -567,19 +426,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         handler.removeCallbacksAndMessages(null)
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.save_dialog_title))
-            .setMessage(getString(R.string.save_dialog_message))
-            .setPositiveButton(getString(R.string.yes_button_label)) { _, _ ->
-                handleSaveButton()
-            }
-            .setNegativeButton(getString(R.string.cancel_button_label)) { dialog, _ ->
-                dialog.dismiss()
-                resumeSession()
-            }
-            .create()
-
-        dialog.show()
+        SaveSessionDialog.show(
+            this,
+            { handleSaveButton() },
+            { resumeSession() }
+        )
     }
 
     private fun resumeSession() {
@@ -625,58 +476,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            val outputPackage = createPackageWithPhotos()
+            val outputPackage = PhotoZipper.zip(filesDir)
             withContext(Dispatchers.Main) {
                 progressDialog.dismiss()
-                returnAnswer(outputPackage)
+                ResultIntentHelper.returnIntent(this@CaptureMultipleImagesActivity, outputPackage)
             }
-        }
-    }
-
-    private fun createPackageWithPhotos(): File {
-        val zipFile = File(outputDirectory, "photos_${System.currentTimeMillis()}.zip")
-        val files = outputDirectory.listFiles { file -> file.name.startsWith(PHOTO_NAME_PREFIX) }
-
-        if (files != null && files.isNotEmpty()) {
-            try {
-                ZipOutputStream(zipFile.outputStream().buffered()).use { zipOut ->
-                    zipOut.setLevel(Deflater.NO_COMPRESSION)
-                    for (file in files) {
-                        FileInputStream(file).use { fis ->
-                            val entry = ZipEntry(file.name)
-                            zipOut.putNextEntry(entry)
-                            fis.copyTo(zipOut)
-                            zipOut.closeEntry()
-                        }
-                    }
-                }
-            } catch (e: IOException) {
-                Log.e("CaptureMultiplePhotos", "Error when creating zip package", e)
-            }
-        }
-
-        return zipFile
-    }
-
-    private fun returnAnswer(file: File) {
-        val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
-        val uri = getUriForFile(file)
-        addItem(intent, uri)
-        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        setResult(Activity.RESULT_OK, intent)
-        finish()
-    }
-
-    private fun getUriForFile(file: File): Uri {
-        return FileProvider.getUriForFile(applicationContext, "ai.qed.camera.fileprovider", file)
-    }
-
-    private fun addItem(intent: Intent, uri: Uri) {
-        intent.putExtra("value", uri)
-        if (intent.clipData == null) {
-            intent.clipData = ClipData.newRawUri(null, uri)
-        } else {
-            intent.clipData?.addItem(ClipData.Item(uri))
         }
     }
 
@@ -693,19 +497,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         handler.removeCallbacksAndMessages(null)
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.exit_dialog_title))
-            .setMessage(getString(R.string.exit_dialog_message))
-            .setPositiveButton(getString(R.string.yes_button_label)) { _, _ ->
-                finish()
-            }
-            .setNegativeButton(getString(R.string.cancel_button_label)) { dialog, _ ->
-                dialog.dismiss()
-                resumeSession()
-            }
-            .create()
-
-        dialog.show()
+        ExitSessionDialog.show(
+            this,
+            { finish() },
+            { resumeSession() }
+        )
     }
 
     private fun restartCameraIfNeeded() {
@@ -718,23 +514,5 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun updateModeText() {
         binding.labelModeInfo.text =
             if (isAutomaticMode) getString(R.string.automatic_mode_label) else getString(R.string.manual_mode_label)
-    }
-
-    private fun getIntegerOrDefaultFromString(value: String, defaultValue: Int): Int {
-        return if (value.isEmpty()) {
-            defaultValue
-        } else {
-            value.toIntOrNull() ?: defaultValue
-        }
-    }
-
-    private fun getStringOrDefaultFromString(value: String, defaultValue: String): String {
-        return value.ifEmpty {
-            defaultValue
-        }
-    }
-
-    private fun getExecutor(): Executor {
-        return ContextCompat.getMainExecutor(this)
     }
 }

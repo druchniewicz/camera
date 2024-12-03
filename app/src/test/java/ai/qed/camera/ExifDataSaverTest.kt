@@ -12,6 +12,18 @@ import java.io.File
 @RunWith(AndroidJUnit4::class)
 class ExifDataSaverTest {
     @Test
+    fun `location is not saved to exif data if it is not available`() {
+        val photo = File.createTempFile("sample", ".jpg")
+
+        ExifDataSaver.saveLocationAttributes(photo, null, 0.0, 0.0, 0.0)
+
+        val exif = ExifInterface(photo)
+
+        assertThat(exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE), equalTo(null))
+        assertThat(exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE), equalTo(null))
+    }
+
+    @Test
     fun `location is correctly converted and saved to exif data`() {
         listOf(
             LocationTestData(40.748817, -73.985428, exifLatitude = "40/1,44/1,55741/1000", exifLongitude = "73/1,59/1,7540/1000"),
