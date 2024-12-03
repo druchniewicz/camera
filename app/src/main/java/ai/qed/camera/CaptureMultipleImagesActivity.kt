@@ -3,6 +3,7 @@ package ai.qed.camera
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.ui.ExitSessionDialog
 import ai.qed.camera.ui.SaveSessionDialog
+import ai.qed.camera.ui.SettingsDialog
 import android.Manifest
 import android.app.ProgressDialog
 import android.content.pm.PackageManager
@@ -14,12 +15,9 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.View
-import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
@@ -208,27 +206,16 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showSettingsDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_camera_settings, null)
-        val captureIntervalInput = dialogView.findViewById<EditText>(R.id.input_captureInterval)
-        val modeSwitch = dialogView.findViewById<SwitchCompat>(R.id.switch_mode)
-
-        captureIntervalInput.setText(cameraConfig.captureInterval.toString())
-        modeSwitch.isChecked = isAutomaticMode
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.settings_dialog_title))
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.save_dialog_button)) { _, _ ->
-                isAutomaticMode = modeSwitch.isChecked
-                cameraConfig.captureInterval =
-                    captureIntervalInput.text.toString().toIntOrNull() ?: cameraConfig.captureInterval
-                updateModeText()
-                restartCameraIfNeeded()
-            }
-            .setNegativeButton(getString(R.string.cancel_button_label), null)
-            .create()
-
-        dialog.show()
+        SettingsDialog.show(
+            this,
+            cameraConfig.captureInterval.toString(),
+            isAutomaticMode
+        ) { captureInterval, isAutomaticMode ->
+            this.isAutomaticMode = isAutomaticMode
+            cameraConfig.captureInterval = captureInterval.toIntOrNull() ?: cameraConfig.captureInterval
+            updateModeText()
+            restartCameraIfNeeded()
+        }
     }
 
     private fun setupVolumeButtonListener() {
