@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Camera</string>
+    <string name="app_name">QED Camera</string>
     <string name="automatic_mode_label">AUTOMATIC</string>
     <string name="manual_mode_label">MANUAL</string>
     <string name="saving_toast_message">Saving...</string>
@@ -21,4 +21,5 @@
     <string name="limit_reached_label">(limit reached)</string>
     <string name="max_photo_limit_reached_toast_message">Maximum photo limit reached</string>
     <string name="take_photo_error_toast_message">Something went wrong while taking the photo</string>
+    <string name="camera_permission_required">Camera access is required to continue. Please grant the permission in settings.</string>
 </resources>

@@ -7,66 +7,19 @@
         android:id="@+id/preview"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:focusableInTouchMode="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <LinearLayout
-        android:id="@+id/topBar"
-        android:layout_width="0dp"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="8dp"
-        android:background="#50000000"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="end"
-            android:layout_marginTop="24dp">
-
-            <ImageButton
-                android:id="@+id/btn_volume"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:contentDescription="@string/volume_toggle"
-                android:src="@drawable/ic_volume_on"
-                app:tint="@android:color/white"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:layout_marginEnd="16dp" />
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
-
-                <ImageButton
-                    android:id="@+id/btn_settings"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:contentDescription="@string/settings_dialog_title"
-                    android:src="@drawable/ic_settings"
-                    app:tint="@android:color/white"
-                    android:background="?attr/selectableItemBackgroundBorderless" />
-
-                <TextView
-                    android:id="@+id/label_modeInfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="AUTO"
-                    android:textColor="@android:color/holo_red_light"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="4dp" />
-            </LinearLayout>
-        </LinearLayout>
+        android:paddingTop="48dp"
+        android:paddingBottom="24dp"
+        android:paddingHorizontal="16dp"
+        android:background="#80000000"
+        app:layout_constraintTop_toTopOf="parent">
 
         <TextView
             android:id="@+id/label_elapsedTime"
@@ -75,7 +28,8 @@
             android:text="Elapsed time:"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:layout_marginTop="4dp"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"/>
 
         <TextView
             android:id="@+id/label_photosTaken"
@@ -84,7 +38,8 @@
             android:text="Number of photos:"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:layout_marginTop="4dp"/>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/label_elapsedTime"/>
 
         <TextView
             android:id="@+id/label_sessionTime"
@@ -93,65 +48,90 @@
             android:text="Remaining time:"
             android:textColor="@android:color/white"
             android:textSize="16sp"
-            android:layout_marginTop="4dp"/>
-    </LinearLayout>
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/label_photosTaken"/>
 
-    <ProgressBar
-        android:id="@+id/progressBar_shutterBtn"
-        style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:indeterminate="false"
-        android:max="100"
-        android:progressDrawable="@drawable/progress_circular_drawable"
-        android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="@id/bottomBar"
-        app:layout_constraintEnd_toEndOf="@id/bottomBar"
-        app:layout_constraintStart_toStartOf="@id/bottomBar"
-        app:layout_constraintTop_toTopOf="@id/bottomBar"
-        android:layout_marginBottom="40dp"/>
+        <ImageButton
+            android:id="@+id/btn_volume"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/ic_volume_on"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintEnd_toStartOf="@id/btn_settings"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <LinearLayout
-        android:id="@+id/bottomBar"
-        android:layout_width="0dp"
-        android:layout_height="140dp"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:background="#50000000"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:padding="8dp">
+        <ImageButton
+            android:id="@+id/btn_settings"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/ic_settings"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageButton
-        android:id="@+id/btn_cancel"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:background="@drawable/ic_close"
-        android:contentDescription="@string/cancel_button_label"
-        android:layout_marginEnd="50dp"
-        android:layout_marginBottom="20dp" />
+        <TextView
+            android:id="@+id/label_modeInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="AUTO"
+            android:textColor="@android:color/holo_red_light"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:layout_marginTop="4dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/btn_settings"/>
 
-    <ImageButton
-        android:id="@+id/btn_shutter"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:background="@drawable/selector_button_shutter"
-        android:contentDescription="@string/shutter_button_description_text"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="20dp" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <ImageButton
-        android:id="@+id/btn_savePhotos"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:background="@drawable/ic_save"
-        android:contentDescription="@string/save_dialog_button"
-        android:layout_marginStart="50dp"
-        android:layout_marginBottom="20dp" />
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="24dp"
+        android:background="#80000000"
+        app:layout_constraintBottom_toBottomOf="parent">
 
-    </LinearLayout>
+        <ProgressBar
+            android:id="@+id/progressBar_shutterBtn"
+            style="@android:style/Widget.DeviceDefault.Light.ProgressBar.Horizontal"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:indeterminate="false"
+            android:max="100"
+            android:progressDrawable="@drawable/progress_circular_drawable"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="@id/btn_shutter"
+            app:layout_constraintEnd_toEndOf="@id/btn_shutter"
+            app:layout_constraintStart_toStartOf="@id/btn_shutter"
+            app:layout_constraintTop_toTopOf="@id/btn_shutter" />
+
+        <ImageButton
+            android:id="@+id/btn_cancel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/ic_close"
+            app:layout_constraintBottom_toBottomOf="@id/btn_shutter"
+            app:layout_constraintEnd_toStartOf="@id/btn_shutter"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@id/btn_shutter" />
+
+        <ImageButton
+            android:id="@+id/btn_shutter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/selector_button_shutter"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
+
+        <ImageButton
+            android:id="@+id/btn_savePhotos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/ic_save"
+            app:layout_constraintBottom_toBottomOf="@id/btn_shutter"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btn_shutter"
+            app:layout_constraintTop_toTopOf="@id/btn_shutter" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
     <View
         android:id="@+id/shutter_effect_view"

@@ -22,7 +22,7 @@
         tools:targetApi="31">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".ui.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat">
             <intent-filter>
@@ -32,13 +32,19 @@
         </activity>
 
         <activity
-            android:name=".CaptureMultipleImagesActivity"
+            android:name=".ui.PermissionsActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
             <intent-filter>
                 <action android:name="ai.qed.camera"/>
                 <category android:name="android.intent.category.DEFAULT"/>
             </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.CaptureMultipleImagesActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
         </activity>
 
         <provider

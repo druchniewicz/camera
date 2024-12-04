@@ -1,11 +1,19 @@
-package ai.qed.camera
+package ai.qed.camera.ui
 
+import ai.qed.camera.CameraConfig
+import ai.qed.camera.CameraX
+import ai.qed.camera.DeviceOrientationProvider
+import ai.qed.camera.LocationProvider
+import ai.qed.camera.MODE_PARAM_DEFAULT_VALUE
+import ai.qed.camera.PHOTO_NAME_PREFIX
+import ai.qed.camera.PhotoZipper
+import ai.qed.camera.R
+import ai.qed.camera.ResultIntentHelper
+import ai.qed.camera.ZERO
+import ai.qed.camera.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
-import ai.qed.camera.ui.ExitSessionDialog
-import ai.qed.camera.ui.SaveSessionDialog
-import android.Manifest
+import ai.qed.camera.toCameraConfig
 import android.app.ProgressDialog
-import android.content.pm.PackageManager
 import android.hardware.SensorManager
 import android.media.AudioManager
 import android.media.SoundPool
@@ -14,14 +22,9 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.View
-import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -33,7 +36,6 @@ import java.io.File
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
     private lateinit var cameraConfig: CameraConfig
-    private val cameraX = CameraX()
 
     private lateinit var handler: Handler
     private lateinit var soundPool: SoundPool
@@ -54,42 +56,19 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private lateinit var locationProvider: LocationProvider
     private lateinit var deviceOrientationProvider: DeviceOrientationProvider
+    private lateinit var cameraX: CameraX
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.btnShutter.adoptToEgeToEdge()
         locationProvider = LocationProvider(this)
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
+        cameraX = CameraX(locationProvider, deviceOrientationProvider)
 
-        if (isPermissionGranted(Manifest.permission.CAMERA)) {
-            startApplicationWithLocationRequest()
-        } else {
-            requestCameraPermission()
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        when (requestCode) {
-            REQUEST_CAMERA_PERMISSION_CODE -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    requestLocationPermission()
-                } else {
-                    finish()
-                }
-            }
-
-            REQUEST_LOCATION_PERMISSION_CODE -> {
-                startApplication()
-            }
-        }
+        startApplication()
     }
 
     override fun onResume() {
@@ -110,37 +89,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob?.cancel()
         soundPool.release()
         finish()
-    }
-
-    private fun startApplicationWithLocationRequest() {
-        if (isPermissionGranted(Manifest.permission.ACCESS_FINE_LOCATION)) {
-            startApplication()
-        } else {
-            requestLocationPermission()
-        }
-    }
-
-    private fun isPermissionGranted(permission: String): Boolean {
-        return ContextCompat.checkSelfPermission(
-            this,
-            permission
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
-    private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            REQUEST_CAMERA_PERMISSION_CODE
-        )
-    }
-
-    private fun requestLocationPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            REQUEST_LOCATION_PERMISSION_CODE
-        )
     }
 
     private fun startApplication() {
@@ -208,27 +156,16 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showSettingsDialog() {
-        val dialogView = layoutInflater.inflate(R.layout.dialog_camera_settings, null)
-        val captureIntervalInput = dialogView.findViewById<EditText>(R.id.input_captureInterval)
-        val modeSwitch = dialogView.findViewById<SwitchCompat>(R.id.switch_mode)
-
-        captureIntervalInput.setText(cameraConfig.captureInterval.toString())
-        modeSwitch.isChecked = isAutomaticMode
-
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(getString(R.string.settings_dialog_title))
-            .setView(dialogView)
-            .setPositiveButton(getString(R.string.save_dialog_button)) { _, _ ->
-                isAutomaticMode = modeSwitch.isChecked
-                cameraConfig.captureInterval =
-                    captureIntervalInput.text.toString().toIntOrNull() ?: cameraConfig.captureInterval
-                updateModeText()
-                restartCameraIfNeeded()
-            }
-            .setNegativeButton(getString(R.string.cancel_button_label), null)
-            .create()
-
-        dialog.show()
+        SettingsDialog.show(
+            this,
+            cameraConfig.captureInterval.toString(),
+            isAutomaticMode
+        ) { captureInterval, isAutomaticMode ->
+            this.isAutomaticMode = isAutomaticMode
+            cameraConfig.captureInterval = captureInterval.toIntOrNull() ?: cameraConfig.captureInterval
+            updateModeText()
+            restartCameraIfNeeded()
+        }
     }
 
     private fun setupVolumeButtonListener() {
@@ -289,7 +226,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
         val photoFile = File(
             filesDir,
-            "${PHOTO_NAME_PREFIX}${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
+            "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
         )
 
         applyVisualAndAudioEffects()
@@ -299,7 +236,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             {
                 photoCounter++
                 updatePhotosTakenLabel()
-                saveGeoExifData(photoFile)
             },
             {
                 Toast.makeText(
@@ -357,16 +293,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         } else {
             binding.labelPhotosTaken.text = baseText
         }
-    }
-
-    private fun saveGeoExifData(photoFile: File) {
-        ExifDataSaver.saveLocationAttributes(
-            photoFile,
-            locationProvider.lastKnownLocation,
-            deviceOrientationProvider.azimuth,
-            deviceOrientationProvider.pitch,
-            deviceOrientationProvider.roll
-        )
     }
 
     private fun takePicturesInSeries() {
