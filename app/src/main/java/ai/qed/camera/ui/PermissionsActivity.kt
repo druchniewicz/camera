@@ -6,18 +6,24 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 
 class PermissionsActivity : ComponentActivity() {
+    private lateinit var activityResultLauncher: ActivityResultLauncher<Intent>
+
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){ permissionMap ->
             permissionMap.entries.forEach {
                 if (it.key == Manifest.permission.CAMERA) {
                     if (it.value) {
+                        val extras = intent.extras
                         Intent(this, CaptureMultipleImagesActivity::class.java).apply {
-                            startActivity(this)
+                            if (extras != null) {
+                                putExtras(extras)
+                            }
+                            activityResultLauncher.launch(this)
                         }
-                        finish()
                     } else {
                         Toast.makeText(
                             this,
@@ -32,6 +38,13 @@ class PermissionsActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        activityResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                setResult(RESULT_OK, result.data)
+            }
+            finish()
+        }
+
         requestPermissionLauncher.launch(
             listOf(
                 Manifest.permission.CAMERA,
