@@ -7,7 +7,9 @@ data class CameraConfig(
     var captureInterval: Int,
     val maxPhotoCount: Int,
     val maxSessionDuration: Int,
-    val photoFormat: String
+    val photoFormat: String,
+    val questionNamePrefix: String,
+    val maxNumberOfPackages: Int
 )
 
 fun toCameraConfig(intent: Intent): CameraConfig {
@@ -32,7 +34,25 @@ fun toCameraConfig(intent: Intent): CameraConfig {
         PHOTO_FORMAT_DEFAULT_VALUE
     )
 
-    return CameraConfig(mode, captureInterval, maxPhotoCount, maxSessionDuration, photoFormat)
+    val questionNamePrefix = getStringOrDefaultFromString(
+        intent.getStringExtra(QUESTION_NAME_PREFIX_KEY),
+        QUESTION_NAME_PREFIX_DEFAULT_VALUE
+    )
+
+    val maxNumberOfPackages = getIntegerOrDefaultFromString(
+        intent.getStringExtra(MAX_NUMBER_OF_PACKAGES_KEY),
+        MAX_NUMBER_OF_PACKAGES_DEFAULT_VALUE
+    )
+
+    return CameraConfig(
+        mode,
+        captureInterval,
+        maxPhotoCount,
+        maxSessionDuration,
+        photoFormat,
+        questionNamePrefix,
+        maxNumberOfPackages
+    )
 }
 
 private fun getStringOrDefaultFromString(value: String?, defaultValue: String): String {
