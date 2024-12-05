@@ -17,8 +17,7 @@ object SaveSessionDialog {
             .setPositiveButton(context.getString(R.string.yes_button_label)) { _, _ ->
                 onConfirm()
             }
-            .setNegativeButton(context.getString(R.string.cancel_button_label)) { dialog, _ ->
-                dialog.dismiss()
+            .setNegativeButton(context.getString(R.string.cancel_button_label)) { _, _ ->
                 onCancel()
             }
             .create()

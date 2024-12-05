@@ -210,12 +210,14 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         SettingsDialog.show(
             this,
             viewmodel.getCaptureInterval().toString(),
-            viewmodel.isAutoMode.value == true
-        ) { captureInterval, isAutomaticMode ->
-            viewmodel.setCameraMode(isAutomaticMode)
-            viewmodel.setCaptureInterval(captureInterval.toIntOrNull())
-            resumeSession()
-        }
+            viewmodel.isAutoMode.value == true,
+            { captureInterval, isAutomaticMode ->
+                viewmodel.setCameraMode(isAutomaticMode)
+                viewmodel.setCaptureInterval(captureInterval.toIntOrNull())
+                resumeSession()
+            },
+            { resumeSession() }
+        )
     }
 
     private fun showSaveConfirmationDialog() {

@@ -11,7 +11,8 @@ object SettingsDialog {
         context: Context,
         captureInterval: String,
         isAutomaticMode: Boolean,
-        onConfirm: (captureInterval: String, isAutomaticMode: Boolean) -> Unit
+        onConfirm: (captureInterval: String, isAutomaticMode: Boolean) -> Unit,
+        onCancel: () -> Unit
     ) {
         val binding = DialogCameraSettingsBinding.inflate(LayoutInflater.from(context))
         binding.inputCaptureInterval.setText(captureInterval)
@@ -27,7 +28,9 @@ object SettingsDialog {
                     binding.switchMode.isChecked
                 )
             }
-            .setNegativeButton(context.getString(R.string.cancel_button_label), null)
+            .setNegativeButton(context.getString(R.string.cancel_button_label)) { _, _ ->
+                onCancel()
+            }
             .create()
             .show()
     }
