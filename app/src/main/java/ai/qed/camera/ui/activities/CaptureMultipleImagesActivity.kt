@@ -14,10 +14,11 @@ import ai.qed.camera.ui.dialogs.ProgressDialog
 import ai.qed.camera.ui.dialogs.SaveSessionDialog
 import ai.qed.camera.ui.dialogs.SettingsDialog
 import ai.qed.camera.ui.shutterEffect
+import android.annotation.SuppressLint
 import android.hardware.SensorManager
 import android.media.MediaPlayer
 import android.os.Bundle
-import android.view.View
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
@@ -29,18 +30,11 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.distinctUntilChanged
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
 
     private val viewmodel: CaptureMultipleImagesViewModel by viewModels()
-
-    private var shutterJob: Job? = null
 
     private lateinit var locationProvider: LocationProvider
     private lateinit var deviceOrientationProvider: DeviceOrientationProvider
@@ -94,6 +88,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupUi() {
         binding.btnSettings.setOnClickListener {
             showSettingsDialog()
@@ -112,25 +107,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             takeSinglePicture()
         }
         binding.btnShutter.setOnLongClickListener {
-            binding.progressBarShutterBtn.visibility = View.VISIBLE
-            binding.progressBarShutterBtn.progress = 0
-
-            shutterJob = CoroutineScope(Dispatchers.Main).launch {
-                for (i in 1..100) {
-                    delay(30)
-                    binding.progressBarShutterBtn.progress = i
-                    binding.progressBarShutterBtn.invalidate()
-                }
-
-                viewmodel.setCameraMode(viewmodel.isAutoMode.value != true)
-                binding.progressBarShutterBtn.visibility = View.GONE
-            }
+            viewmodel.startProgress()
             true
         }
         binding.btnShutter.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_UP) {
-                shutterJob?.cancel()
-                binding.progressBarShutterBtn.visibility = View.GONE
+            if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
+                viewmodel.stopProgress()
             }
             false
         }
@@ -178,6 +160,15 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 viewmodel.stopTimer()
                 viewmodel.stopTakingPhotos()
             }
+        }
+        viewmodel.progress.distinctUntilChanged().observe(this) { progress ->
+            if (progress == 100) {
+                viewmodel.setCameraMode(viewmodel.isAutoMode.value != true)
+                binding.progressBarShutterBtn.progress = 0
+            } else {
+                binding.progressBarShutterBtn.progress = progress
+            }
+            binding.progressBarShutterBtn.invalidate()
         }
     }
 

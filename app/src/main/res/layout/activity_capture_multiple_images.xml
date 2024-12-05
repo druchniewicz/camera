@@ -85,7 +85,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingVertical="24dp"
+        android:paddingVertical="8dp"
         android:background="#80000000"
         app:layout_constraintBottom_toBottomOf="parent">
 
@@ -97,11 +97,9 @@
             android:indeterminate="false"
             android:max="100"
             android:progressDrawable="@drawable/progress_circular_drawable"
-            android:visibility="gone"
-            app:layout_constraintBottom_toBottomOf="@id/btn_shutter"
-            app:layout_constraintEnd_toEndOf="@id/btn_shutter"
-            app:layout_constraintStart_toStartOf="@id/btn_shutter"
-            app:layout_constraintTop_toTopOf="@id/btn_shutter" />
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <ImageButton
             android:id="@+id/btn_cancel"
@@ -120,7 +118,8 @@
             android:background="@drawable/selector_button_shutter"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent" />
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/progressBar_shutterBtn" />
 
         <ImageButton
             android:id="@+id/btn_savePhotos"

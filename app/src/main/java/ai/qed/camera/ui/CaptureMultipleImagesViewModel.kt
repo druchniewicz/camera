@@ -42,9 +42,13 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _isCameraInitialized = MutableLiveData(false)
     val isCameraInitialized: LiveData<Boolean> = _isCameraInitialized
 
+    private val _progress= MutableLiveData(0)
+    val progress: LiveData<Int> = _progress
+
     private lateinit var cameraConfig: CameraConfig
     private var timerJob: Job? = null
     private var photosJob: Job? = null
+    private var progressJob: Job? = null
 
     fun setCameraConfig(cameraConfig: CameraConfig) {
         this.cameraConfig = cameraConfig
@@ -104,6 +108,20 @@ class CaptureMultipleImagesViewModel : ViewModel() {
                 { _error.postValue(R.string.take_photo_error_toast_message) }
             )
         }
+    }
+
+    fun startProgress() {
+        progressJob = viewModelScope.launch(Dispatchers.IO) {
+            for (i in 1..100) {
+                delay(30)
+                _progress.postValue(i)
+            }
+        }
+    }
+
+    fun stopProgress() {
+        progressJob?.cancel()
+        _progress.postValue(0)
     }
 
     fun zipFiles(storage: File) {
