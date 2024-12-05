@@ -1,4 +1,4 @@
-package ai.qed.camera.ui
+package ai.qed.camera.ui.activities
 
 import ai.qed.camera.R
 import android.Manifest

@@ -17,7 +17,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".ui.MainActivity"
+            android:name=".ui.activities.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat">
             <intent-filter>
@@ -27,7 +27,7 @@
         </activity>
 
         <activity
-            android:name=".ui.PermissionsActivity"
+            android:name=".ui.activities.PermissionsActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
             <intent-filter>
@@ -37,7 +37,7 @@
         </activity>
 
         <activity
-            android:name=".ui.CaptureMultipleImagesActivity"
+            android:name=".ui.activities.CaptureMultipleImagesActivity"
             android:exported="false"
             android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
         </activity>

@@ -1,4 +1,4 @@
-package ai.qed.camera.ui
+package ai.qed.camera.ui.activities
 
 import ai.qed.camera.domain.CameraX
 import ai.qed.camera.domain.DeviceOrientationProvider
@@ -8,6 +8,12 @@ import ai.qed.camera.domain.ResultIntentHelper
 import ai.qed.camera.domain.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.domain.toCameraConfig
+import ai.qed.camera.ui.CaptureMultipleImagesViewModel
+import ai.qed.camera.ui.dialogs.ExitSessionDialog
+import ai.qed.camera.ui.dialogs.ProgressDialog
+import ai.qed.camera.ui.dialogs.SaveSessionDialog
+import ai.qed.camera.ui.dialogs.SettingsDialog
+import ai.qed.camera.ui.shutterEffect
 import android.hardware.SensorManager
 import android.media.MediaPlayer
 import android.os.Bundle

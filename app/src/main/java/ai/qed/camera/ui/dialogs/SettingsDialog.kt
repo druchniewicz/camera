@@ -1,4 +1,4 @@
-package ai.qed.camera.ui
+package ai.qed.camera.ui.dialogs
 
 import ai.qed.camera.R
 import ai.qed.camera.databinding.DialogCameraSettingsBinding
