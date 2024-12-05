@@ -9,6 +9,7 @@ import ai.qed.camera.PHOTO_NAME_PREFIX
 import ai.qed.camera.PhotoZipper
 import ai.qed.camera.R
 import ai.qed.camera.ResultIntentHelper
+import ai.qed.camera.TimeHelper
 import ai.qed.camera.ZERO
 import ai.qed.camera.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
@@ -314,7 +315,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         remainingSessionTime = cameraConfig.maxSessionDuration
         sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
             while (remainingSessionTime >= 0) {
-                binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
+                binding.labelSessionTime.text = getString(
+                    R.string.session_time_label,
+                    TimeHelper.formatSecondsToReadableStringRepresentation(remainingSessionTime)
+                )
                 delay(1000)
                 remainingSessionTime--
             }
@@ -331,8 +335,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun startElapsedTimeCounter() {
         elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
             while (true) {
-                binding.labelElapsedTime.text =
-                    getString(R.string.elapsed_time_label, elapsedTimeInSeconds)
+                binding.labelElapsedTime.text = getString(
+                    R.string.elapsed_time_label,
+                    TimeHelper.formatSecondsToReadableStringRepresentation(elapsedTimeInSeconds)
+                )
                 elapsedTimeInSeconds++
                 delay(1000)
             }
@@ -371,8 +377,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
             var currentElapsedTime = elapsedTimeBeforePause ?: elapsedTimeInSeconds
             while (true) {
-                binding.labelElapsedTime.text =
-                    getString(R.string.elapsed_time_label, currentElapsedTime)
+                binding.labelElapsedTime.text = getString(
+                    R.string.elapsed_time_label,
+                    TimeHelper.formatSecondsToReadableStringRepresentation(currentElapsedTime)
+                )
                 currentElapsedTime++
                 elapsedTimeInSeconds = currentElapsedTime
                 delay(1000)
@@ -384,7 +392,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
             remainingSessionTime = remainingTime
             while (remainingSessionTime >= 0) {
-                binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
+                binding.labelSessionTime.text = getString(
+                    R.string.session_time_label,
+                    TimeHelper.formatSecondsToReadableStringRepresentation(remainingSessionTime)
+                )
                 delay(1000)
                 remainingSessionTime--
             }
