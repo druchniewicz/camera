@@ -22,6 +22,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -74,13 +75,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         deviceOrientationProvider.start()
-        binding.root.keepScreenOn = true
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onPause() {
         super.onPause()
         deviceOrientationProvider.stop()
-        binding.root.keepScreenOn = false
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
     }
 
     override fun onDestroy() {
@@ -90,7 +91,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         sessionTimeJob?.cancel()
         elapsedTimeJob?.cancel()
         soundPool.release()
-        binding.root.keepScreenOn = false
         finish()
     }
 
@@ -127,8 +127,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 isAutomaticMode = cameraConfig.mode == MODE_PARAM_DEFAULT_VALUE
 
                 updateModeText()
-
-                binding.root.keepScreenOn = true
 
                 if (isAutomaticMode) {
                     startImageCapture()
