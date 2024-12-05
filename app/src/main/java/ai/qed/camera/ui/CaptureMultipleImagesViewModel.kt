@@ -1,10 +1,10 @@
 package ai.qed.camera.ui
 
-import ai.qed.camera.CameraConfig
-import ai.qed.camera.CameraX
-import ai.qed.camera.MODE_PARAM_DEFAULT_VALUE
-import ai.qed.camera.PHOTO_NAME_PREFIX
-import ai.qed.camera.PhotoZipper
+import ai.qed.camera.domain.CameraConfig
+import ai.qed.camera.domain.CameraX
+import ai.qed.camera.domain.MODE_PARAM_DEFAULT_VALUE
+import ai.qed.camera.domain.PHOTO_NAME_PREFIX
+import ai.qed.camera.domain.PhotoZipper
 import ai.qed.camera.R
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

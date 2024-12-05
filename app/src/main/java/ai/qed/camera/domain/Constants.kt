@@ -1,4 +1,4 @@
-package ai.qed.camera
+package ai.qed.camera.domain
 
 // parameter keys
 const val MODE_PARAM_KEY = "mode"

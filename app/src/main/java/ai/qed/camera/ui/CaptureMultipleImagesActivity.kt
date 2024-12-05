@@ -1,13 +1,13 @@
 package ai.qed.camera.ui
 
-import ai.qed.camera.CameraX
-import ai.qed.camera.DeviceOrientationProvider
-import ai.qed.camera.LocationProvider
+import ai.qed.camera.domain.CameraX
+import ai.qed.camera.domain.DeviceOrientationProvider
+import ai.qed.camera.domain.LocationProvider
 import ai.qed.camera.R
-import ai.qed.camera.ResultIntentHelper
-import ai.qed.camera.clearFilesDir
+import ai.qed.camera.domain.ResultIntentHelper
+import ai.qed.camera.domain.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
-import ai.qed.camera.toCameraConfig
+import ai.qed.camera.domain.toCameraConfig
 import android.hardware.SensorManager
 import android.media.MediaPlayer
 import android.os.Bundle
