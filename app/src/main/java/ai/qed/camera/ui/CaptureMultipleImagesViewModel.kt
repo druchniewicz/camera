@@ -2,10 +2,10 @@ package ai.qed.camera.ui
 
 import ai.qed.camera.domain.CameraConfig
 import ai.qed.camera.domain.CameraX
-import ai.qed.camera.domain.MODE_PARAM_DEFAULT_VALUE
-import ai.qed.camera.domain.PHOTO_NAME_PREFIX
 import ai.qed.camera.domain.PhotoZipper
 import ai.qed.camera.R
+import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
+import ai.qed.camera.domain.isAutomaticMode
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -48,7 +48,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun setCameraConfig(cameraConfig: CameraConfig) {
         this.cameraConfig = cameraConfig
-        setCameraMode(cameraConfig.mode == MODE_PARAM_DEFAULT_VALUE)
+        setCameraMode(cameraConfig.isAutomaticMode())
     }
 
     fun setCameraState(isCameraInitialized: Boolean) {

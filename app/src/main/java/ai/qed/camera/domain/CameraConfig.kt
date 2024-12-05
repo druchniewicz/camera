@@ -2,6 +2,22 @@ package ai.qed.camera.domain
 
 import android.content.Intent
 
+private const val MODE_PARAM_KEY = "mode"
+private const val CAPTURE_INTERVAL_PARAM_KEY = "captureInterval"
+private const val MAX_PHOTO_COUNT_PARAM_KEY = "maxPhotoCount"
+private const val MAX_SESSION_DURATION_PARAM_KEY = "maxSessionDuration"
+private const val PHOTO_FORMAT_PARAM_KEY = "photoFormat"
+private const val QUESTION_NAME_PREFIX_KEY = "questionNamePrefix"
+private const val MAX_NUMBER_OF_PACKAGES_KEY = "maxNumberOfPackages"
+
+private const val MODE_PARAM_DEFAULT_VALUE = "automatic"
+private const val CAPTURE_INTERVAL_DEFAULT_VALUE = 5
+private const val MAX_PHOTO_COUNT_DEFAULT_VALUE = 0
+private const val MAX_SESSION_DURATION_DEFAULT_VALUE = 0
+private const val PHOTO_FORMAT_DEFAULT_VALUE = "jpg"
+private const val QUESTION_NAME_PREFIX_DEFAULT_VALUE = "part"
+private const val MAX_NUMBER_OF_PACKAGES_DEFAULT_VALUE = 100
+
 data class CameraConfig(
     var mode: String,
     var captureInterval: Int,
@@ -11,6 +27,10 @@ data class CameraConfig(
     val questionNamePrefix: String,
     val maxNumberOfPackages: Int
 )
+
+fun CameraConfig.isAutomaticMode(): Boolean {
+    return mode == MODE_PARAM_DEFAULT_VALUE
+}
 
 fun toCameraConfig(intent: Intent): CameraConfig {
     val mode = getStringOrDefaultFromString(
