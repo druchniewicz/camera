@@ -45,12 +45,14 @@ class PermissionsActivity : ComponentActivity() {
             finish()
         }
 
-        requestPermissionLauncher.launch(
-            listOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ).toTypedArray()
-        )
+        if (savedInstanceState == null) {
+            requestPermissionLauncher.launch(
+                listOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ).toTypedArray()
+            )
+        }
     }
 }

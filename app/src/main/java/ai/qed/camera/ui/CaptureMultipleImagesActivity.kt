@@ -1,193 +1,110 @@
 package ai.qed.camera.ui
 
-import ai.qed.camera.CameraConfig
 import ai.qed.camera.CameraX
 import ai.qed.camera.DeviceOrientationProvider
 import ai.qed.camera.LocationProvider
-import ai.qed.camera.MODE_PARAM_DEFAULT_VALUE
-import ai.qed.camera.PHOTO_NAME_PREFIX
-import ai.qed.camera.PhotoZipper
 import ai.qed.camera.R
 import ai.qed.camera.ResultIntentHelper
-import ai.qed.camera.ZERO
 import ai.qed.camera.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.toCameraConfig
-import android.app.ProgressDialog
 import android.hardware.SensorManager
-import android.media.AudioManager
-import android.media.SoundPool
+import android.media.MediaPlayer
 import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
-import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.view.isVisible
+import androidx.lifecycle.distinctUntilChanged
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.File
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
-    private lateinit var cameraConfig: CameraConfig
 
-    private lateinit var handler: Handler
-    private lateinit var soundPool: SoundPool
+    private val viewmodel: CaptureMultipleImagesViewModel by viewModels()
 
-    private var photoCounter = 0
-    private var isAutomaticMode = false
     private var shutterJob: Job? = null
-    private var sessionTimeJob: Job? = null
-    private var remainingSessionTime = 0
-    private var isUnlimitedSession = false
-    private var isSoundOn = true
-    private var shutterSoundId: Int = 0
-    private var remainingSessionTimeBeforePause: Int? = null
-    private var elapsedTimeJob: Job? = null
-    private var elapsedTimeInSeconds = 0
-    private var elapsedTimeBeforePause: Int? = null
-    private var isUnlimitedPhotoCount = false
 
     private lateinit var locationProvider: LocationProvider
     private lateinit var deviceOrientationProvider: DeviceOrientationProvider
     private lateinit var cameraX: CameraX
+    private lateinit var mediaPlayer: MediaPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.btnShutter.adoptToEgeToEdge()
+
+        disableBackButton()
+        hideSystemBars()
+
+        if (savedInstanceState == null) {
+            clearFilesDir()
+            viewmodel.setCameraConfig(toCameraConfig(intent))
+        }
+
         locationProvider = LocationProvider(this)
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
+        lifecycle.addObserver(locationProvider)
+        lifecycle.addObserver(deviceOrientationProvider)
         cameraX = CameraX(locationProvider, deviceOrientationProvider)
+        mediaPlayer = MediaPlayer.create(this, R.raw.camera_shutter_sound)
 
-        startApplication()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        deviceOrientationProvider.start()
+        setupUi()
+        setupObservers()
+        setupCamera()
     }
 
     override fun onPause() {
         super.onPause()
-        deviceOrientationProvider.stop()
+        viewmodel.setCameraState(false)
+        mediaPlayer.release()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        locationProvider.stop()
-        handler.removeCallbacksAndMessages(null)
-        sessionTimeJob?.cancel()
-        elapsedTimeJob?.cancel()
-        soundPool.release()
-        finish()
+    private fun disableBackButton() {
+        onBackPressedDispatcher.addCallback(object: OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() = Unit
+        })
     }
 
-    private fun startApplication() {
-        cameraConfig = toCameraConfig(intent)
-        locationProvider.start()
-
-        isUnlimitedSession = cameraConfig.maxSessionDuration == ZERO
-        isUnlimitedPhotoCount = cameraConfig.maxPhotoCount == ZERO
-
-        initializeSoundPool()
-
-        clearFilesDir()
-
-        startCamera()
-        setupSettingsButtonListener()
-        setupVolumeButtonListener()
-        setupShutterButtonListeners()
-        setupSaveButtonListener()
-        setupCancelButtonListener()
-        startElapsedTimeCounter()
-    }
-
-    private fun initializeSoundPool() {
-        soundPool = SoundPool.Builder().setMaxStreams(1).build()
-        shutterSoundId = soundPool.load(this, R.raw.camera_shutter_sound, 1)
-    }
-
-    private fun startCamera() {
-        cameraX.initialize(
-            this,
-            binding.preview,
-            {
-                isAutomaticMode = cameraConfig.mode == MODE_PARAM_DEFAULT_VALUE
-
-                updateModeText()
-
-                if (isAutomaticMode) {
-                    startImageCapture()
-                }
-            },
-            {
-                Log.e("CameraBinding", "Something went wrong during camera binding")
-            }
-        )
-
-        if (!isUnlimitedSession) {
-            setupSessionTimer()
-            binding.labelSessionTime.visibility = View.VISIBLE
-        } else {
-            binding.labelSessionTime.visibility = View.GONE
+    private fun hideSystemBars() {
+        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+            ViewCompat.onApplyWindowInsets(view, windowInsets)
         }
     }
 
-    private fun startImageCapture() {
-        val handlerThread = HandlerThread("CameraBackground").apply { start() }
-        handler = Handler(handlerThread.looper)
-
-        takePicturesInSeries()
-    }
-
-    private fun setupSettingsButtonListener() {
+    private fun setupUi() {
         binding.btnSettings.setOnClickListener {
             showSettingsDialog()
         }
-    }
-
-    private fun showSettingsDialog() {
-        SettingsDialog.show(
-            this,
-            cameraConfig.captureInterval.toString(),
-            isAutomaticMode
-        ) { captureInterval, isAutomaticMode ->
-            this.isAutomaticMode = isAutomaticMode
-            cameraConfig.captureInterval = captureInterval.toIntOrNull() ?: cameraConfig.captureInterval
-            updateModeText()
-            restartCameraIfNeeded()
-        }
-    }
-
-    private fun setupVolumeButtonListener() {
         binding.btnVolume.setOnClickListener {
-            isSoundOn = !isSoundOn
-            updateVolumeIcon()
+            viewmodel.toggleSound()
         }
-    }
-
-    private fun updateVolumeIcon() {
-        if (isSoundOn) {
-            binding.btnVolume.setImageResource(R.drawable.ic_volume_on)
-        } else {
-            binding.btnVolume.setImageResource(R.drawable.ic_volume_off)
+        binding.btnSavePhotos.setOnClickListener {
+            showSaveConfirmationDialog()
         }
-    }
-
-    private fun setupShutterButtonListeners() {
+        binding.btnCancel.setOnClickListener {
+            showExitConfirmationDialog()
+        }
+        binding.labelSessionTime.isVisible = viewmodel.isSessionTimeLimited()
         binding.btnShutter.setOnClickListener {
             takeSinglePicture()
         }
-
         binding.btnShutter.setOnLongClickListener {
             binding.progressBarShutterBtn.visibility = View.VISIBLE
             binding.progressBarShutterBtn.progress = 0
@@ -199,12 +116,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                     binding.progressBarShutterBtn.invalidate()
                 }
 
-                toggleAutoMode()
+                viewmodel.setCameraMode(viewmodel.isAutoMode.value != true)
                 binding.progressBarShutterBtn.visibility = View.GONE
             }
             true
         }
-
         binding.btnShutter.setOnTouchListener { _, event ->
             if (event.action == android.view.MotionEvent.ACTION_UP) {
                 shutterJob?.cancel()
@@ -214,218 +130,108 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
     }
 
-    private fun takeSinglePicture() {
-        if (!isUnlimitedPhotoCount && photoCounter >= cameraConfig.maxPhotoCount) {
-            Toast.makeText(
-                this,
-                getString(R.string.max_photo_limit_reached_toast_message),
-                Toast.LENGTH_LONG
-            ).show()
-            return
+    private fun setupObservers() {
+        viewmodel.files.distinctUntilChanged().observe(this) { files ->
+            ResultIntentHelper.returnIntent(this, files)
         }
+        viewmodel.timer.distinctUntilChanged().observe(this) { time ->
+            val maxSessionDuration = viewmodel.getMaxSessionDuration()
+            binding.labelElapsedTime.text = getString(R.string.elapsed_time_label, time)
+            binding.labelSessionTime.text = getString(R.string.session_time_label, maxSessionDuration - time)
+            if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
+                viewmodel.stopTimer()
+                viewmodel.stopTakingPhotos()
+                saveSession()
+            }
+        }
+        viewmodel.photoCounter.distinctUntilChanged().observe(this) { photoCounter ->
+            binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
+        }
+        viewmodel.error.distinctUntilChanged().observe(this) { error ->
+            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+        }
+        viewmodel.isAutoMode.distinctUntilChanged().observe(this) { isAutoMode ->
+            if (isAutoMode) {
+                binding.labelModeInfo.text = getString(R.string.automatic_mode_label)
+                takePicturesInSeries()
+            } else {
+                viewmodel.stopTakingPhotos()
+                binding.labelModeInfo.text = getString(R.string.manual_mode_label)
+            }
+        }
+        viewmodel.isSoundOn.distinctUntilChanged().observe(this) { isSoundOn ->
+            binding.btnVolume.setImageResource(
+                if (isSoundOn) R.drawable.ic_volume_on else R.drawable.ic_volume_off
+            )
+        }
+        viewmodel.isCameraInitialized.distinctUntilChanged().observe(this) { isCameraInitialized ->
+            if (isCameraInitialized) {
+                viewmodel.startTimer()
+                takePicturesInSeries()
+            } else {
+                viewmodel.stopTimer()
+                viewmodel.stopTakingPhotos()
+            }
+        }
+    }
 
-        val photoFile = File(
-            filesDir,
-            "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
-        )
-
-        applyVisualAndAudioEffects()
-
-        cameraX.takePicture(
-            photoFile.absolutePath,
+    private fun setupCamera() {
+        cameraX.initialize(
+            this,
+            binding.preview,
+            { viewmodel.setCameraState(true) },
             {
-                photoCounter++
-                updatePhotosTakenLabel()
-            },
-            {
-                Toast.makeText(
-                    this@CaptureMultipleImagesActivity,
-                    getString(R.string.take_photo_error_toast_message),
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(this, "Something went wrong during camera binding", Toast.LENGTH_LONG).show()
+                finish()
             }
         )
     }
 
-    private fun applyVisualAndAudioEffects() {
-        ensureVolumeIsNotMuted()
-        if (isSoundOn) {
-            soundPool.play(shutterSoundId, 1f, 1f, 0, 0, 1f)
+    private fun takeSinglePicture() {
+        if (viewmodel.isSoundOn.value == true) {
+            mediaPlayer.start()
         }
-        triggerShutterEffect()
-    }
-
-    private fun ensureVolumeIsNotMuted() {
-        val audioManager = getSystemService(AUDIO_SERVICE) as AudioManager
-        if (audioManager.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
-            audioManager.setStreamVolume(
-                AudioManager.STREAM_MUSIC,
-                1,
-                0
-            )
-        }
-    }
-
-    private fun triggerShutterEffect() {
-        runOnUiThread {
-            binding.shutterEffectView.visibility = View.VISIBLE
-            binding.shutterEffectView.alpha = 1f
-            binding.shutterEffectView.animate()
-                .alpha(0f)
-                .setDuration(200)
-                .withEndAction { binding.shutterEffectView.visibility = View.GONE }
-                .start()
-        }
-    }
-
-    private fun toggleAutoMode() {
-        isAutomaticMode = !isAutomaticMode
-        updateModeText()
-
-        restartCameraIfNeeded()
-    }
-
-    private fun updatePhotosTakenLabel() {
-        val baseText = getString(R.string.photos_taken_label, photoCounter)
-
-        if (!isUnlimitedPhotoCount && photoCounter >= cameraConfig.maxPhotoCount) {
-            binding.labelPhotosTaken.text = "$baseText ${getString(R.string.limit_reached_label)}"
-        } else {
-            binding.labelPhotosTaken.text = baseText
-        }
+        binding.shutterEffectView.shutterEffect()
+        viewmodel.takePicture(cameraX, filesDir)
     }
 
     private fun takePicturesInSeries() {
-        handler.removeCallbacksAndMessages(null)
-
-        if (!isAutomaticMode) return
-
-        handler.postDelayed({
-            if (isUnlimitedPhotoCount || photoCounter < cameraConfig.maxPhotoCount) {
+        if (viewmodel.isAutoMode.value == true && viewmodel.isCameraInitialized.value == true) {
+            viewmodel.startTakingPictures {
                 takeSinglePicture()
-                takePicturesInSeries()
-            } else {
-                handler.removeCallbacksAndMessages(null)
-            }
-        }, cameraConfig.captureInterval * 1000L)
-    }
-
-    private fun setupSessionTimer() {
-        remainingSessionTime = cameraConfig.maxSessionDuration
-        sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
-            while (remainingSessionTime >= 0) {
-                binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
-                delay(1000)
-                remainingSessionTime--
-            }
-            saveAndExit()
-        }
-    }
-
-    private fun saveAndExit() {
-        sessionTimeJob?.cancel()
-        elapsedTimeJob?.cancel()
-        handleSaveButton()
-    }
-
-    private fun startElapsedTimeCounter() {
-        elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
-            while (true) {
-                binding.labelElapsedTime.text =
-                    getString(R.string.elapsed_time_label, elapsedTimeInSeconds)
-                elapsedTimeInSeconds++
-                delay(1000)
             }
         }
     }
 
-    private fun setupSaveButtonListener() {
-        binding.btnSavePhotos.setOnClickListener {
-            showSaveConfirmationDialog()
+    private fun showSettingsDialog() {
+        viewmodel.stopTimer()
+        viewmodel.stopTakingPhotos()
+
+        SettingsDialog.show(
+            this,
+            viewmodel.getCaptureInterval().toString(),
+            viewmodel.isAutoMode.value == true
+        ) { captureInterval, isAutomaticMode ->
+            viewmodel.setCameraMode(isAutomaticMode)
+            viewmodel.setCaptureInterval(captureInterval.toIntOrNull())
+            resumeSession()
         }
     }
 
     private fun showSaveConfirmationDialog() {
-        remainingSessionTimeBeforePause = remainingSessionTime
-        elapsedTimeBeforePause = elapsedTimeInSeconds
-        sessionTimeJob?.cancel()
-        elapsedTimeJob?.cancel()
-        handler.removeCallbacksAndMessages(null)
+        viewmodel.stopTimer()
+        viewmodel.stopTakingPhotos()
 
         SaveSessionDialog.show(
             this,
-            { handleSaveButton() },
+            { saveSession() },
             { resumeSession() }
         )
     }
 
-    private fun resumeSession() {
-        if (!isUnlimitedSession && remainingSessionTimeBeforePause != null) {
-            resumeSessionTimer(remainingSessionTimeBeforePause!!)
-        }
-
-        if (isAutomaticMode) {
-            takePicturesInSeries()
-        }
-
-        elapsedTimeJob = CoroutineScope(Dispatchers.Main).launch {
-            var currentElapsedTime = elapsedTimeBeforePause ?: elapsedTimeInSeconds
-            while (true) {
-                binding.labelElapsedTime.text =
-                    getString(R.string.elapsed_time_label, currentElapsedTime)
-                currentElapsedTime++
-                elapsedTimeInSeconds = currentElapsedTime
-                delay(1000)
-            }
-        }
-    }
-
-    private fun resumeSessionTimer(remainingTime: Int) {
-        sessionTimeJob = CoroutineScope(Dispatchers.Main).launch {
-            remainingSessionTime = remainingTime
-            while (remainingSessionTime >= 0) {
-                binding.labelSessionTime.text = getString(R.string.session_time_label, remainingSessionTime)
-                delay(1000)
-                remainingSessionTime--
-            }
-            saveAndExit()
-        }
-    }
-
-    private fun handleSaveButton() {
-        handler.removeCallbacksAndMessages(null)
-
-        val progressDialog = ProgressDialog(this).apply {
-            setMessage(getString(R.string.saving_toast_message))
-            setCancelable(false)
-            show()
-        }
-
-        CoroutineScope(Dispatchers.IO).launch {
-            val outputPackages = PhotoZipper.zip(
-                filesDir,
-                cameraConfig.questionNamePrefix,
-                cameraConfig.maxNumberOfPackages
-            )
-            withContext(Dispatchers.Main) {
-                progressDialog.dismiss()
-                ResultIntentHelper.returnIntent(this@CaptureMultipleImagesActivity, outputPackages)
-            }
-        }
-    }
-
-    private fun setupCancelButtonListener() {
-        binding.btnCancel.setOnClickListener {
-            showExitConfirmationDialog()
-        }
-    }
-
     private fun showExitConfirmationDialog() {
-        remainingSessionTimeBeforePause = remainingSessionTime
-        elapsedTimeBeforePause = elapsedTimeInSeconds
-        sessionTimeJob?.cancel()
-        elapsedTimeJob?.cancel()
-        handler.removeCallbacksAndMessages(null)
+        viewmodel.stopTimer()
+        viewmodel.stopTakingPhotos()
 
         ExitSessionDialog.show(
             this,
@@ -434,15 +240,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         )
     }
 
-    private fun restartCameraIfNeeded() {
-        handler.removeCallbacksAndMessages(null)
-        if (isAutomaticMode) {
-            startImageCapture()
-        }
+    private fun saveSession() {
+        viewmodel.zipFiles(filesDir)
+        ProgressDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
     }
 
-    private fun updateModeText() {
-        binding.labelModeInfo.text =
-            if (isAutomaticMode) getString(R.string.automatic_mode_label) else getString(R.string.manual_mode_label)
+    private fun resumeSession() {
+        viewmodel.startTimer()
+        takePicturesInSeries()
     }
 }

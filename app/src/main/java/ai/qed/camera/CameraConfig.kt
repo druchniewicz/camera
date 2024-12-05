@@ -33,12 +33,10 @@ fun toCameraConfig(intent: Intent): CameraConfig {
         intent.getStringExtra(PHOTO_FORMAT_PARAM_KEY),
         PHOTO_FORMAT_DEFAULT_VALUE
     )
-
     val questionNamePrefix = getStringOrDefaultFromString(
         intent.getStringExtra(QUESTION_NAME_PREFIX_KEY),
         QUESTION_NAME_PREFIX_DEFAULT_VALUE
     )
-
     val maxNumberOfPackages = getIntegerOrDefaultFromString(
         intent.getStringExtra(MAX_NUMBER_OF_PACKAGES_KEY),
         MAX_NUMBER_OF_PACKAGES_DEFAULT_VALUE

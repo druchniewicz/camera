@@ -20,6 +20,7 @@ object SettingsDialog {
         AlertDialog.Builder(context)
             .setTitle(context.getString(R.string.settings_dialog_title))
             .setView(binding.root)
+            .setCancelable(false)
             .setPositiveButton(context.getString(R.string.save_dialog_button)) { _, _ ->
                 onConfirm(
                     binding.inputCaptureInterval.text.toString(),

@@ -39,7 +39,6 @@ class CameraX(
                     .build()
 
                 try {
-                    cameraProvider.unbindAll()
                     cameraProvider.bindToLifecycle(
                         activity,
                         CameraSelector.DEFAULT_BACK_CAMERA,
