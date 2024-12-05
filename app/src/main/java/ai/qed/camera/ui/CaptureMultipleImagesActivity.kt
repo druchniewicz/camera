@@ -402,10 +402,14 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
 
         CoroutineScope(Dispatchers.IO).launch {
-            val outputPackage = PhotoZipper.zip(filesDir)
+            val outputPackages = PhotoZipper.zip(
+                filesDir,
+                cameraConfig.questionNamePrefix,
+                cameraConfig.maxNumberOfPackages
+            )
             withContext(Dispatchers.Main) {
                 progressDialog.dismiss()
-                ResultIntentHelper.returnIntent(this@CaptureMultipleImagesActivity, outputPackage)
+                ResultIntentHelper.returnIntent(this@CaptureMultipleImagesActivity, outputPackages)
             }
         }
     }

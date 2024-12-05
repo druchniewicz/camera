@@ -8,10 +8,13 @@ import androidx.core.content.FileProvider
 import java.io.File
 
 object ResultIntentHelper {
-    fun returnIntent(activity: Activity, file: File) {
+    fun returnIntent(activity: Activity, files: List<File>) {
         val intent = Intent(Intent.ACTION_SEND_MULTIPLE)
-        val uri = getUriForFile(activity, file)
-        addItem(intent, uri)
+        for (file in files) {
+            val key = file.nameWithoutExtension
+            val uri = getUriForFile(activity, file)
+            addItem(intent, key, uri)
+        }
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         activity.setResult(Activity.RESULT_OK, intent)
         activity.finish()
@@ -21,8 +24,8 @@ object ResultIntentHelper {
         return FileProvider.getUriForFile(activity, "ai.qed.camera.fileprovider", file)
     }
 
-    private fun addItem(intent: Intent, uri: Uri) {
-        intent.putExtra("value", uri)
+    private fun addItem(intent: Intent, key: String, uri: Uri) {
+        intent.putExtra(key, uri)
         if (intent.clipData == null) {
             intent.clipData = ClipData.newRawUri(null, uri)
         } else {
