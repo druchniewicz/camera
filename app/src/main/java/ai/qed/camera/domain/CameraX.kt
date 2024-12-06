@@ -1,5 +1,7 @@
 package ai.qed.camera.domain
 
+import ai.qed.camera.data.DeviceOrientationProvider
+import ai.qed.camera.data.LocationProvider
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.camera.core.CameraSelector

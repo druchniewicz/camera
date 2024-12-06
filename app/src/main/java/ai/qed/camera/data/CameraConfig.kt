@@ -1,4 +1,4 @@
-package ai.qed.camera.domain
+package ai.qed.camera.data
 
 import android.content.Intent
 

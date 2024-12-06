@@ -1,13 +1,13 @@
 package ai.qed.camera.ui.activities
 
 import ai.qed.camera.domain.CameraX
-import ai.qed.camera.domain.DeviceOrientationProvider
-import ai.qed.camera.domain.LocationProvider
+import ai.qed.camera.data.DeviceOrientationProvider
+import ai.qed.camera.data.LocationProvider
 import ai.qed.camera.R
 import ai.qed.camera.domain.ResultIntentHelper
 import ai.qed.camera.domain.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
-import ai.qed.camera.domain.toCameraConfig
+import ai.qed.camera.data.toCameraConfig
 import ai.qed.camera.ui.CaptureMultipleImagesViewModel
 import ai.qed.camera.ui.dialogs.ExitSessionDialog
 import ai.qed.camera.ui.dialogs.ProgressDialog
