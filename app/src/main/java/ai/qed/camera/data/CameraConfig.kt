@@ -32,10 +32,6 @@ fun CameraConfig.isAutomaticMode(): Boolean {
     return mode == MODE_PARAM_DEFAULT_VALUE
 }
 
-fun CameraConfig.isUnlimitedPhotoCount(): Boolean {
-    return maxPhotoCount == MAX_PHOTO_COUNT_DEFAULT_VALUE
-}
-
 fun toCameraConfig(intent: Intent): CameraConfig {
     val mode = getStringOrDefaultFromString(
         intent.getStringExtra(MODE_PARAM_KEY),

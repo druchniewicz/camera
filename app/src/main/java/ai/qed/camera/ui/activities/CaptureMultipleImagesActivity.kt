@@ -133,11 +133,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             }
         }
         viewmodel.photoCounter.distinctUntilChanged().observe(this) { photoCounter ->
-            val baseText = getString(R.string.photos_taken_label, photoCounter)
-            if (viewmodel.isUnlimitedPhotoCount.value == false && photoCounter >= viewmodel.getMaxPhotoCount()) {
-                binding.labelPhotosTaken.text = "$baseText ${getString(R.string.limit_reached_label)}"
-            } else {
-                binding.labelPhotosTaken.text = baseText
+            binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
+            if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
+                viewmodel.stopTimer()
+                viewmodel.stopTakingPhotos()
+                saveSession()
             }
         }
         viewmodel.error.distinctUntilChanged().observe(this) { error ->
@@ -190,13 +190,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takeSinglePicture() {
-        if (viewmodel.isUnlimitedPhotoCount.value == true || viewmodel.photoCounter.value!! < viewmodel.getMaxPhotoCount()) {
-            if (viewmodel.isSoundOn.value == true) {
-                mediaPlayer.start()
-            }
-            binding.shutterEffectView.shutterEffect()
-            viewmodel.takePicture(cameraX, filesDir)
+        if (viewmodel.isSoundOn.value == true) {
+            mediaPlayer.start()
         }
+        binding.shutterEffectView.shutterEffect()
+        viewmodel.takePicture(cameraX, filesDir)
     }
 
     private fun takePicturesInSeries() {
