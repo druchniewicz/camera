@@ -133,7 +133,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             }
         }
         viewmodel.photoCounter.distinctUntilChanged().observe(this) { photoCounter ->
-            binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
+            val baseText = getString(R.string.photos_taken_label, photoCounter)
+            if (viewmodel.isUnlimitedPhotoCount.value == false && photoCounter >= viewmodel.getMaxPhotoCount()) {
+                binding.labelPhotosTaken.text = "$baseText ${getString(R.string.limit_reached_label)}"
+            } else {
+                binding.labelPhotosTaken.text = baseText
+            }
         }
         viewmodel.error.distinctUntilChanged().observe(this) { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()
@@ -185,11 +190,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun takeSinglePicture() {
-        if (viewmodel.isSoundOn.value == true) {
-            mediaPlayer.start()
+        if (viewmodel.isUnlimitedPhotoCount.value == true || viewmodel.photoCounter.value!! < viewmodel.getMaxPhotoCount()) {
+            if (viewmodel.isSoundOn.value == true) {
+                mediaPlayer.start()
+            }
+            binding.shutterEffectView.shutterEffect()
+            viewmodel.takePicture(cameraX, filesDir)
         }
-        binding.shutterEffectView.shutterEffect()
-        viewmodel.takePicture(cameraX, filesDir)
     }
 
     private fun takePicturesInSeries() {

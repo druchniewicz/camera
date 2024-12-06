@@ -6,6 +6,7 @@ import ai.qed.camera.domain.PhotoZipper
 import ai.qed.camera.R
 import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
 import ai.qed.camera.data.isAutomaticMode
+import ai.qed.camera.data.isUnlimitedPhotoCount
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -45,6 +46,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _progress= MutableLiveData(0)
     val progress: LiveData<Int> = _progress
 
+    private val _isUnlimitedPhotoCount = MutableLiveData<Boolean>()
+    val isUnlimitedPhotoCount: LiveData<Boolean> = _isUnlimitedPhotoCount
+
     private lateinit var cameraConfig: CameraConfig
     private var timerJob: Job? = null
     private var photosJob: Job? = null
@@ -53,6 +57,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     fun setCameraConfig(cameraConfig: CameraConfig) {
         this.cameraConfig = cameraConfig
         setCameraMode(cameraConfig.isAutomaticMode())
+        setIsUnlimitedPhotoCount(cameraConfig.isUnlimitedPhotoCount())
     }
 
     fun setCameraState(isCameraInitialized: Boolean) {
@@ -61,6 +66,10 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun setCameraMode(isAutoMode: Boolean) {
         _isAutoMode.value = isAutoMode
+    }
+
+    fun setIsUnlimitedPhotoCount(isUnlimitedPhotoCount: Boolean) {
+        _isUnlimitedPhotoCount.value = isUnlimitedPhotoCount
     }
 
     fun toggleSound() {
@@ -156,5 +165,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun getMaxSessionDuration(): Int {
         return cameraConfig.maxSessionDuration
+    }
+
+    fun getMaxPhotoCount(): Int {
+        return cameraConfig.maxPhotoCount
     }
 }
