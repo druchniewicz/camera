@@ -15,9 +15,10 @@
     <string name="save_dialog_title">Finish session</string>
     <string name="save_dialog_message">Current session will be finished and data will be saved. Do you want to continue?</string>
     <string name="shutter_button_description_text">Shutter button</string>
-    <string name="elapsed_time_label">Elapsed time: %1$d sec</string>
+    <string name="elapsed_time_label">Elapsed time: %1$s</string>
     <string name="photos_taken_label">Number of photos: %d</string>
-    <string name="session_time_label">Remaining time: %1$d sec</string>
+    <string name="session_time_label">Remaining time: %1$s</string>
     <string name="take_photo_error_toast_message">Something went wrong while taking the photo</string>
     <string name="camera_permission_required">Camera access is required to continue. Please grant the permission in settings.</string>
+    <string name="capture_interval_validation_message">Value must be greater than 0</string>
 </resources>

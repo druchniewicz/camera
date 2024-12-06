@@ -8,6 +8,7 @@ import ai.qed.camera.domain.ResultIntentHelper
 import ai.qed.camera.domain.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.data.toCameraConfig
+import ai.qed.camera.domain.TimeHelper
 import ai.qed.camera.ui.CaptureMultipleImagesViewModel
 import ai.qed.camera.ui.dialogs.ExitSessionDialog
 import ai.qed.camera.ui.dialogs.ProgressDialog
@@ -124,8 +125,14 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
         viewmodel.timer.distinctUntilChanged().observe(this) { time ->
             val maxSessionDuration = viewmodel.getMaxSessionDuration()
-            binding.labelElapsedTime.text = getString(R.string.elapsed_time_label, time)
-            binding.labelSessionTime.text = getString(R.string.session_time_label, maxSessionDuration - time)
+            binding.labelElapsedTime.text = getString(
+                R.string.elapsed_time_label,
+                TimeHelper.formatSecondsToReadableStringRepresentation(time)
+            )
+            binding.labelSessionTime.text = getString(
+                R.string.session_time_label,
+                TimeHelper.formatSecondsToReadableStringRepresentation(maxSessionDuration - time)
+            )
             if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
                 viewmodel.stopTimer()
                 viewmodel.stopTakingPhotos()
