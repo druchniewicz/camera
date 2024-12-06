@@ -1,13 +1,15 @@
-package ai.qed.camera
+package ai.qed.camera.data
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 
 class DeviceOrientationProvider(
     private val sensorManager: SensorManager?
-) : SensorEventListener {
+) : SensorEventListener, DefaultLifecycleObserver {
     var azimuth = 0.0
         private set
     var pitch = 0.0
@@ -33,7 +35,8 @@ class DeviceOrientationProvider(
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
 
-    fun start() {
+    override fun onResume(owner: LifecycleOwner) {
+        super.onResume(owner)
         sensorManager?.let {
             it.registerListener(
                 this,
@@ -43,7 +46,8 @@ class DeviceOrientationProvider(
         }
     }
 
-    fun stop() {
+    override fun onPause(owner: LifecycleOwner) {
+        super.onPause(owner)
         sensorManager?.unregisterListener(this)
     }
 }

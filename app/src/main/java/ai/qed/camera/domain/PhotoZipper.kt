@@ -1,4 +1,4 @@
-package ai.qed.camera
+package ai.qed.camera.domain
 
 import android.util.Log
 import java.io.File
@@ -9,6 +9,9 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 object PhotoZipper {
+    const val PHOTO_NAME_PREFIX = "photo_"
+    private const val MAX_PACKAGE_SIZE_IN_MEGABYTES = 240
+
     fun zip(dir: File, questionNamePrefix: String, maxNumberOfPackages: Int): List<File> {
         val files =
             dir.listFiles { file -> file.name.startsWith(PHOTO_NAME_PREFIX) } ?: return emptyList()
