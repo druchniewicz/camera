@@ -134,6 +134,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
         viewmodel.photoCounter.distinctUntilChanged().observe(this) { photoCounter ->
             binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
+            if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
+                viewmodel.stopTimer()
+                viewmodel.stopTakingPhotos()
+                saveSession()
+            }
         }
         viewmodel.error.distinctUntilChanged().observe(this) { error ->
             Toast.makeText(this, error, Toast.LENGTH_LONG).show()

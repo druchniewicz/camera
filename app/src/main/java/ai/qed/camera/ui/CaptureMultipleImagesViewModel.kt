@@ -157,4 +157,12 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     fun getMaxSessionDuration(): Int {
         return cameraConfig.maxSessionDuration
     }
+
+    fun isPhotoCountLimited(): Boolean {
+        return cameraConfig.maxPhotoCount != 0
+    }
+
+    fun getMaxPhotoCount(): Int {
+        return cameraConfig.maxPhotoCount
+    }
 }
