@@ -25,37 +25,26 @@ object SettingsDialog {
         val dialog = AlertDialog.Builder(context)
             .setTitle(context.getString(R.string.settings_dialog_title))
             .setView(binding.root)
-            .setPositiveButton(context.getString(R.string.save_dialog_button), null)
-            .setNegativeButton(context.getString(R.string.cancel_button_label), null)
-            .create()
-
-        dialog.setOnShowListener {
-            val saveButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            val cancelButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-
-            binding.inputCaptureInterval.addTextChangedListener(object : TextWatcher {
-                override fun afterTextChanged(s: Editable?) {
-                    validateCaptureIntervalValue(s?.toString(), binding, saveButton)
-                }
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            })
-
-            saveButton.setOnClickListener {
+            .setPositiveButton(context.getString(R.string.save_dialog_button)) { _, _ ->
                 onConfirm(
                     binding.inputCaptureInterval.text.toString(),
                     binding.switchMode.isChecked
                 )
-                dialog.dismiss()
             }
-
-            cancelButton.setOnClickListener {
+            .setNegativeButton(context.getString(R.string.cancel_button_label)) { _, _ ->
                 onCancel()
-                dialog.dismiss()
             }
-        }
+            .create()
 
         dialog.show()
+
+        binding.inputCaptureInterval.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                validateCaptureIntervalValue(s?.toString(), binding, dialog.getButton(AlertDialog.BUTTON_POSITIVE))
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
     }
 
     private fun validateCaptureIntervalValue(
