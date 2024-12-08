@@ -141,13 +141,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         }
     }
 
-    fun isSessionTimeLimited(): Boolean {
-        return cameraConfig.maxSessionDuration != 0
-    }
+    fun isSessionTimeLimited(): Boolean = cameraConfig.maxSessionDuration != 0
 
-    fun getCaptureInterval(): Int {
-        return cameraConfig.captureInterval
-    }
+    fun getCaptureInterval(): Int = cameraConfig.captureInterval
 
     fun setCaptureInterval(captureInterval: Int?) {
         if (captureInterval != null) {
@@ -155,15 +151,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         }
     }
 
-    fun getMaxSessionDuration(): Int {
-        return cameraConfig.maxSessionDuration
-    }
+    fun getMaxSessionDuration():Int = cameraConfig.maxSessionDuration
 
-    fun isPhotoCountLimited(): Boolean {
-        return cameraConfig.maxPhotoCount != 0
-    }
+    fun isPhotoCountLimited(): Boolean = cameraConfig.maxPhotoCount != 0
 
-    fun getMaxPhotoCount(): Int {
-        return cameraConfig.maxPhotoCount
-    }
+    fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
 }
