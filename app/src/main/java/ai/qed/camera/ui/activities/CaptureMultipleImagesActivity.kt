@@ -136,16 +136,14 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 TimeHelper.formatSecondsToReadableStringRepresentation(maxSessionDuration - time)
             )
             if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
-                viewmodel.stopTimer()
-                viewmodel.stopTakingPhotos()
+                pauseSession()
                 saveSession()
             }
         }
         viewmodel.photoCounter.observe(this) { photoCounter ->
             binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
             if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
-                viewmodel.stopTimer()
-                viewmodel.stopTakingPhotos()
+                pauseSession()
                 saveSession()
             }
         }
@@ -174,8 +172,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 viewmodel.startTimer()
                 takePicturesInSeries()
             } else {
-                viewmodel.stopTimer()
-                viewmodel.stopTakingPhotos()
+                pauseSession()
             }
         }
         viewmodel.progress.observe(this) { progress ->
@@ -218,9 +215,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showSettingsDialog() {
-        viewmodel.stopTimer()
-        viewmodel.stopTakingPhotos()
-
+        pauseSession()
         SettingsDialog.show(
             this,
             viewmodel.getCaptureInterval().toString(),
@@ -235,9 +230,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showSaveConfirmationDialog() {
-        viewmodel.stopTimer()
-        viewmodel.stopTakingPhotos()
-
+        pauseSession()
         SaveSessionDialog.show(
             this,
             { saveSession() },
@@ -246,9 +239,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showExitConfirmationDialog() {
-        viewmodel.stopTimer()
-        viewmodel.stopTakingPhotos()
-
+        pauseSession()
         ExitSessionDialog.show(
             this,
             { finish() },
@@ -259,6 +250,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun saveSession() {
         viewmodel.zipFiles(filesDir)
         ProgressDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
+    }
+
+    private fun pauseSession() {
+        viewmodel.stopTimer()
+        viewmodel.stopTakingPhotos()
     }
 
     private fun resumeSession() {
