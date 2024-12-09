@@ -31,8 +31,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _photoCounter = MutableLiveData(0)
     val photoCounter: LiveData<Int> = _photoCounter
 
-    private val _error = MutableLiveData<Consumable<Int>>()
-    val error: LiveData<Consumable<Int>> = _error
+    private val _error = MutableLiveData<Consumable<String?>>()
+    val error: LiveData<Consumable<String?>> = _error
 
     private val _isAutoMode = MutableLiveData<Boolean>()
     val isAutoMode: LiveData<Boolean> = _isAutoMode
@@ -106,7 +106,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
             cameraX.takePicture(
                 photoFile.absolutePath,
                 { _photoCounter.postValue(_photoCounter.value?.plus(1)) },
-                { _error.postValue(Consumable(R.string.take_photo_error_toast_message)) }
+                { message -> _error.postValue(Consumable(message)) }
             )
         }
     }

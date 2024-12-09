@@ -150,7 +150,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         viewmodel.error.observe(this) { error ->
             if (!error.isConsumed()) {
                 error.consume()
-                Toast.makeText(this, error.value, Toast.LENGTH_LONG).show()
+                if (error.value != null) {
+                    Toast.makeText(this, error.value, Toast.LENGTH_LONG).show()
+                }
             }
         }
         viewmodel.isAutoMode.observe(this) { isAutoMode ->
