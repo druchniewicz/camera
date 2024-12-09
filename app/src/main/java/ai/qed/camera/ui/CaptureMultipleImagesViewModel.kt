@@ -6,6 +6,7 @@ import ai.qed.camera.domain.PhotoZipper
 import ai.qed.camera.R
 import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
 import ai.qed.camera.data.isAutomaticMode
+import ai.qed.camera.domain.Consumable
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -21,8 +22,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _isLoading = MutableLiveData(false)
     val isLoading: LiveData<Boolean> = _isLoading
 
-    private val _files = MutableLiveData<List<File>>()
-    val files: LiveData<List<File>> = _files
+    private val _files = MutableLiveData<Consumable<List<File>>>()
+    val files: LiveData<Consumable<List<File>>> = _files
 
     private val _timer = MutableLiveData(0)
     val timer: LiveData<Int> = _timer
@@ -30,8 +31,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _photoCounter = MutableLiveData(0)
     val photoCounter: LiveData<Int> = _photoCounter
 
-    private val _error = MutableLiveData<Int>()
-    val error: LiveData<Int> = _error
+    private val _error = MutableLiveData<Consumable<String?>>()
+    val error: LiveData<Consumable<String?>> = _error
 
     private val _isAutoMode = MutableLiveData<Boolean>()
     val isAutoMode: LiveData<Boolean> = _isAutoMode
@@ -105,7 +106,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
             cameraX.takePicture(
                 photoFile.absolutePath,
                 { _photoCounter.postValue(_photoCounter.value?.plus(1)) },
-                { _error.postValue(R.string.take_photo_error_toast_message) }
+                { message -> _error.postValue(Consumable(message)) }
             )
         }
     }
@@ -136,17 +137,13 @@ class CaptureMultipleImagesViewModel : ViewModel() {
                 cameraConfig.maxNumberOfPackages
             )
             _isLoading.postValue(false)
-            _files.postValue(files)
+            _files.postValue(Consumable(files))
         }
     }
 
-    fun isSessionTimeLimited(): Boolean {
-        return cameraConfig.maxSessionDuration != 0
-    }
+    fun isSessionTimeLimited(): Boolean = cameraConfig.maxSessionDuration != 0
 
-    fun getCaptureInterval(): Int {
-        return cameraConfig.captureInterval
-    }
+    fun getCaptureInterval(): Int = cameraConfig.captureInterval
 
     fun setCaptureInterval(captureInterval: Int?) {
         if (captureInterval != null) {
@@ -154,15 +151,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         }
     }
 
-    fun getMaxSessionDuration(): Int {
-        return cameraConfig.maxSessionDuration
-    }
+    fun getMaxSessionDuration():Int = cameraConfig.maxSessionDuration
 
-    fun isPhotoCountLimited(): Boolean {
-        return cameraConfig.maxPhotoCount != 0
-    }
+    fun isPhotoCountLimited(): Boolean = cameraConfig.maxPhotoCount != 0
 
-    fun getMaxPhotoCount(): Int {
-        return cameraConfig.maxPhotoCount
-    }
+    fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
 }

@@ -1,5 +1,6 @@
 package ai.qed.camera.domain
 
+import ai.qed.camera.R
 import ai.qed.camera.data.DeviceOrientationProvider
 import ai.qed.camera.data.LocationProvider
 import android.view.View
@@ -60,7 +61,7 @@ class CameraX(
     fun takePicture(
         imagePath: String,
         onImageSaved: () -> Unit,
-        onImageSaveError: () -> Unit
+        onImageSaveError: (String?) -> Unit
     ) {
         activity.let { context ->
             if (context == null) {
@@ -86,7 +87,11 @@ class CameraX(
                     }
 
                     override fun onError(error: ImageCaptureException) {
-                        onImageSaveError()
+                        var message = error.cause?.message
+                        if (message == null) {
+                            message = activity?.getString(R.string.take_photo_error_toast_message)
+                        }
+                        onImageSaveError(message)
                     }
                 }
             )

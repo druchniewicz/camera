@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -61,6 +63,8 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.play.services.location)
     implementation(libs.androidx.exifinterface)
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     testImplementation(libs.robolectric)
     testImplementation(libs.junit)

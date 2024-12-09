@@ -30,7 +30,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
-import androidx.lifecycle.distinctUntilChanged
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCaptureMultipleImagesBinding
@@ -120,10 +119,13 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        viewmodel.files.distinctUntilChanged().observe(this) { files ->
-            ResultIntentHelper.returnIntent(this, files)
+        viewmodel.files.observe(this) { files ->
+            if (!files.isConsumed()) {
+                files.consume()
+                ResultIntentHelper.returnIntent(this, files.value)
+            }
         }
-        viewmodel.timer.distinctUntilChanged().observe(this) { time ->
+        viewmodel.timer.observe(this) { time ->
             val maxSessionDuration = viewmodel.getMaxSessionDuration()
             binding.labelElapsedTime.text = getString(
                 R.string.elapsed_time_label,
@@ -134,23 +136,26 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 TimeHelper.formatSecondsToReadableStringRepresentation(maxSessionDuration - time)
             )
             if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
-                viewmodel.stopTimer()
-                viewmodel.stopTakingPhotos()
+                pauseSession()
                 saveSession()
             }
         }
-        viewmodel.photoCounter.distinctUntilChanged().observe(this) { photoCounter ->
+        viewmodel.photoCounter.observe(this) { photoCounter ->
             binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
             if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
-                viewmodel.stopTimer()
-                viewmodel.stopTakingPhotos()
+                pauseSession()
                 saveSession()
             }
         }
-        viewmodel.error.distinctUntilChanged().observe(this) { error ->
-            Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+        viewmodel.error.observe(this) { error ->
+            if (!error.isConsumed()) {
+                error.consume()
+                if (error.value != null) {
+                    Toast.makeText(this, error.value, Toast.LENGTH_LONG).show()
+                }
+            }
         }
-        viewmodel.isAutoMode.distinctUntilChanged().observe(this) { isAutoMode ->
+        viewmodel.isAutoMode.observe(this) { isAutoMode ->
             if (isAutoMode) {
                 binding.labelModeInfo.text = getString(R.string.automatic_mode_label)
                 takePicturesInSeries()
@@ -159,21 +164,20 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 binding.labelModeInfo.text = getString(R.string.manual_mode_label)
             }
         }
-        viewmodel.isSoundOn.distinctUntilChanged().observe(this) { isSoundOn ->
+        viewmodel.isSoundOn.observe(this) { isSoundOn ->
             binding.btnVolume.setImageResource(
                 if (isSoundOn) R.drawable.ic_volume_on else R.drawable.ic_volume_off
             )
         }
-        viewmodel.isCameraInitialized.distinctUntilChanged().observe(this) { isCameraInitialized ->
+        viewmodel.isCameraInitialized.observe(this) { isCameraInitialized ->
             if (isCameraInitialized) {
                 viewmodel.startTimer()
                 takePicturesInSeries()
             } else {
-                viewmodel.stopTimer()
-                viewmodel.stopTakingPhotos()
+                pauseSession()
             }
         }
-        viewmodel.progress.distinctUntilChanged().observe(this) { progress ->
+        viewmodel.progress.observe(this) { progress ->
             if (progress == 100) {
                 viewmodel.setCameraMode(viewmodel.isAutoMode.value != true)
                 binding.progressBarShutterBtn.progress = 0
@@ -213,9 +217,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showSettingsDialog() {
-        viewmodel.stopTimer()
-        viewmodel.stopTakingPhotos()
-
+        pauseSession()
         SettingsDialog.show(
             this,
             viewmodel.getCaptureInterval().toString(),
@@ -230,9 +232,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showSaveConfirmationDialog() {
-        viewmodel.stopTimer()
-        viewmodel.stopTakingPhotos()
-
+        pauseSession()
         SaveSessionDialog.show(
             this,
             { saveSession() },
@@ -241,9 +241,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun showExitConfirmationDialog() {
-        viewmodel.stopTimer()
-        viewmodel.stopTakingPhotos()
-
+        pauseSession()
         ExitSessionDialog.show(
             this,
             { finish() },
@@ -254,6 +252,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun saveSession() {
         viewmodel.zipFiles(filesDir)
         ProgressDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
+    }
+
+    private fun pauseSession() {
+        viewmodel.stopTimer()
+        viewmodel.stopTakingPhotos()
     }
 
     private fun resumeSession() {
