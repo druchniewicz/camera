@@ -3,10 +3,10 @@ package ai.qed.camera.ui
 import ai.qed.camera.data.CameraConfig
 import ai.qed.camera.domain.CameraX
 import ai.qed.camera.domain.PhotoZipper
-import ai.qed.camera.R
 import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
 import ai.qed.camera.data.isAutomaticMode
 import ai.qed.camera.domain.Consumable
+import ai.qed.camera.domain.PhotoZipper.MAX_PACKAGE_SIZE_IN_MEGABYTES
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -45,6 +45,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     private val _progress= MutableLiveData(0)
     val progress: LiveData<Int> = _progress
+
+    private var usedStorageInBytes: Double = 0.0
 
     private lateinit var cameraConfig: CameraConfig
     private var timerJob: Job? = null
@@ -105,7 +107,10 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
             cameraX.takePicture(
                 photoFile.absolutePath,
-                { _photoCounter.postValue(_photoCounter.value?.plus(1)) },
+                {
+                    _photoCounter.postValue(_photoCounter.value?.plus(1))
+                    usedStorageInBytes += photoFile.length()
+                },
                 { message -> _error.postValue(Consumable(message)) }
             )
         }
@@ -153,7 +158,14 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun getMaxSessionDuration():Int = cameraConfig.maxSessionDuration
 
-    fun isPhotoCountLimited(): Boolean = cameraConfig.maxPhotoCount != 0
+    fun isSessionStorageLimitReached(): Boolean {
+        val usedStorageInMb = usedStorageInBytes / 1024 * 1024
+        val maxStorageInMb = cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES
+        return usedStorageInMb >= maxStorageInMb
+    }
 
-    fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
+    fun isSessionPhotoLimitReached(): Boolean {
+        val isPhotoCountLimited = cameraConfig.maxPhotoCount != 0
+        return isPhotoCountLimited && _photoCounter.value!! >= cameraConfig.maxPhotoCount
+    }
 }
