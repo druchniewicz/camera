@@ -21,4 +21,7 @@
     <string name="take_photo_error_toast_message">Something went wrong while taking the photo</string>
     <string name="camera_permission_required">Camera access is required to continue. Please grant the permission in settings.</string>
     <string name="capture_interval_validation_message">Value must be greater than 0</string>
+    <string name="session_time_limit_reached">The session has ended due to the time limit being reached.</string>
+    <string name="session_storage_limit_reached">The session has ended due to the storage limit being reached.</string>
+    <string name="session_photo_limit_reached">The session has ended due to the photo limit being reached.</string>
 </resources>

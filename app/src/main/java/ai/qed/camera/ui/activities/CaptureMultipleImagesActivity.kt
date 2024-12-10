@@ -136,13 +136,19 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 TimeHelper.formatSecondsToReadableStringRepresentation(maxSessionDuration - time)
             )
             if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
+                Toast.makeText(this, R.string.session_time_limit_reached, Toast.LENGTH_LONG).show()
                 pauseSession()
                 saveSession()
             }
         }
         viewmodel.photoCounter.observe(this) { photoCounter ->
             binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
-            if (viewmodel.isSessionStorageLimitReached() || viewmodel.isSessionPhotoLimitReached()) {
+            if (viewmodel.isSessionStorageLimitReached()) {
+                Toast.makeText(this, R.string.session_storage_limit_reached, Toast.LENGTH_LONG).show()
+                pauseSession()
+                saveSession()
+            } else if(viewmodel.isSessionPhotoLimitReached()) {
+                Toast.makeText(this, R.string.session_photo_limit_reached, Toast.LENGTH_LONG).show()
                 pauseSession()
                 saveSession()
             }
