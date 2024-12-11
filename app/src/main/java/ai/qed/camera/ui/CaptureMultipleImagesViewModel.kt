@@ -148,10 +148,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun getCaptureInterval(): Int = cameraConfig.captureInterval
 
-    fun setCaptureInterval(captureInterval: Int?) {
-        if (captureInterval != null) {
-            cameraConfig.captureInterval = captureInterval
-        }
+    fun setCaptureInterval(captureInterval: Int) {
+        cameraConfig.captureInterval = captureInterval
     }
 
     fun getMaxSessionDuration():Int = cameraConfig.maxSessionDuration
