@@ -55,7 +55,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             viewmodel.setCameraConfig(toCameraConfig(intent))
         }
 
-        locationProvider = LocationProvider(this)
+        locationProvider = LocationProvider(this, viewmodel.getCaptureInterval().toLong())
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
         lifecycle.addObserver(locationProvider)
         lifecycle.addObserver(deviceOrientationProvider)
@@ -230,7 +230,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             viewmodel.isAutoMode.value == true,
             { captureInterval, isAutomaticMode ->
                 viewmodel.setCameraMode(isAutomaticMode)
-                viewmodel.setCaptureInterval(captureInterval.toIntOrNull())
+                val newInterval = captureInterval.toIntOrNull()
+                if (newInterval != null && newInterval != viewmodel.getCaptureInterval()) {
+                    viewmodel.setCaptureInterval(newInterval)
+                    locationProvider.updateInterval(newInterval.toLong())
+                }
                 resumeSession()
             },
             { resumeSession() }
