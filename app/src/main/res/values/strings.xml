@@ -21,4 +21,5 @@
     <string name="session_time_limit_reached">The session has ended due to the time limit being reached.</string>
     <string name="session_storage_limit_reached">The session has ended due to the storage limit being reached.</string>
     <string name="session_photo_limit_reached">The session has ended due to the photo limit being reached.</string>
+    <string name="data_processing">Collected photos are being prepared to return to ODK Collect.</string>
 </resources>

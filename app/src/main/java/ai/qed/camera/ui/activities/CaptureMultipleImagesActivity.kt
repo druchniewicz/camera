@@ -11,7 +11,7 @@ import ai.qed.camera.data.toCameraConfig
 import ai.qed.camera.domain.TimeHelper
 import ai.qed.camera.ui.CaptureMultipleImagesViewModel
 import ai.qed.camera.ui.dialogs.ExitSessionDialog
-import ai.qed.camera.ui.dialogs.ProgressDialog
+import ai.qed.camera.ui.dialogs.DataProcessingDialog
 import ai.qed.camera.ui.dialogs.SaveSessionDialog
 import ai.qed.camera.ui.dialogs.SettingsDialog
 import ai.qed.camera.ui.shutterEffect
@@ -257,7 +257,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
 
     private fun saveSession() {
         viewmodel.zipFiles(filesDir)
-        ProgressDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
+        DataProcessingDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
     }
 
     private fun pauseSession() {
