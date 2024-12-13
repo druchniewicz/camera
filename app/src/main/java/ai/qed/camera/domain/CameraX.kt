@@ -3,6 +3,8 @@ package ai.qed.camera.domain
 import ai.qed.camera.R
 import ai.qed.camera.data.DeviceOrientationProvider
 import ai.qed.camera.data.LocationProvider
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.camera.core.CameraSelector
@@ -12,7 +14,9 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
+import java.io.FileOutputStream
 
 class CameraX(
     private val locationProvider: LocationProvider,
@@ -76,14 +80,13 @@ class CameraX(
                 ContextCompat.getMainExecutor(context),
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        ExifDataSaver.saveLocationAttributes(
-                            outputFile,
-                            locationProvider.lastKnownLocation,
-                            deviceOrientationProvider.azimuth,
-                            deviceOrientationProvider.pitch,
-                            deviceOrientationProvider.roll
-                        )
-                        onImageSaved()
+                        try {
+                            compressImage(outputFile)
+                            saveExifData(outputFile)
+                            onImageSaved()
+                        } catch (e: Exception) {
+                            onImageSaveError(e.message)
+                        }
                     }
 
                     override fun onError(error: ImageCaptureException) {
@@ -95,6 +98,45 @@ class CameraX(
                     }
                 }
             )
+        }
+    }
+
+    private fun compressImage(file: File) {
+        val data = backupOrientationExifData(file.absolutePath)
+        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+        FileOutputStream(file).use { outputStream ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)
+        }
+        restoreExifData(file.absolutePath, data)
+    }
+
+    private fun saveExifData(file: File) {
+        ExifDataSaver.saveLocationAttributes(
+            file,
+            locationProvider.lastKnownLocation,
+            deviceOrientationProvider.azimuth,
+            deviceOrientationProvider.pitch,
+            deviceOrientationProvider.roll
+        )
+    }
+
+    private fun backupOrientationExifData(imagePath: String): String? {
+        return try {
+            val exif = ExifInterface(imagePath)
+            exif.getAttribute(ExifInterface.TAG_ORIENTATION)
+        } catch (e: Throwable) {
+            null
+        }
+    }
+
+    private fun restoreExifData(imagePath: String, orientationExifData: String?) {
+        try {
+            ExifInterface(imagePath).apply {
+                setAttribute(ExifInterface.TAG_ORIENTATION, orientationExifData)
+                saveAttributes()
+            }
+        } catch (e: Throwable) {
+            // ignore
         }
     }
 }
