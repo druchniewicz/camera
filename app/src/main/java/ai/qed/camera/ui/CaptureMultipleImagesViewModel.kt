@@ -104,8 +104,12 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
             cameraX.takePicture(
                 photoFile.absolutePath,
-                { _photoCounter.postValue(_photoCounter.value?.plus(1)) },
-                { message -> _error.postValue(Consumable(message)) }
+                onImageSaved = { _photoCounter.postValue(_photoCounter.value?.plus(1)) },
+                onImageProcessingError = { message ->
+                    _photoCounter.postValue(_photoCounter.value?.minus(1))
+                    _error.postValue(Consumable(message))
+                },
+                onError = { message -> _error.postValue(Consumable(message)) }
             )
         }
     }

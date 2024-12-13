@@ -68,7 +68,8 @@ class CameraX(
     fun takePicture(
         imagePath: String,
         onImageSaved: () -> Unit,
-        onImageSaveError: (String?) -> Unit
+        onImageProcessingError: (String?) -> Unit,
+        onError: (String?) -> Unit,
     ) {
         activity.let { context ->
             if (context == null) {
@@ -85,11 +86,11 @@ class CameraX(
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
+                                onImageSaved()
                                 compressImage(outputFile)
                                 saveExifData(outputFile)
-                                onImageSaved()
                             } catch (e: Exception) {
-                                onImageSaveError(e.message)
+                                onImageProcessingError(e.message)
                             }
                         }
                     }
@@ -99,7 +100,7 @@ class CameraX(
                         if (message == null) {
                             message = activity?.getString(R.string.take_photo_error_toast_message)
                         }
-                        onImageSaveError(message)
+                        onError(message)
                     }
                 }
             )
