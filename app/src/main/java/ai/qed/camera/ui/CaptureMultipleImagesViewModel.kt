@@ -3,7 +3,6 @@ package ai.qed.camera.ui
 import ai.qed.camera.data.CameraConfig
 import ai.qed.camera.domain.CameraX
 import ai.qed.camera.domain.PhotoZipper
-import ai.qed.camera.R
 import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
 import ai.qed.camera.data.isAutomaticMode
 import ai.qed.camera.domain.Consumable
@@ -100,7 +99,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val photoFile = File(
                 storage,
-                "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.${cameraConfig.photoFormat}"
+                "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.jpg"
             )
 
             cameraX.takePicture(
