@@ -15,6 +15,9 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -80,12 +83,14 @@ class CameraX(
                 ContextCompat.getMainExecutor(context),
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        try {
-                            compressImage(outputFile)
-                            saveExifData(outputFile)
-                            onImageSaved()
-                        } catch (e: Exception) {
-                            onImageSaveError(e.message)
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                compressImage(outputFile)
+                                saveExifData(outputFile)
+                                onImageSaved()
+                            } catch (e: Exception) {
+                                onImageSaveError(e.message)
+                            }
                         }
                     }
 
