@@ -99,7 +99,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             val photoFile = File(
                 storage,
-                "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.jpg"
+                "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.webp"
             )
 
             cameraX.takePicture(

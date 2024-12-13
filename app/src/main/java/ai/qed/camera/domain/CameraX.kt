@@ -102,12 +102,11 @@ class CameraX(
     }
 
     private fun compressImage(file: File) {
-        val data = backupOrientationExifData(file.absolutePath)
-        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+        val bitmap = rotateImageIfNeeded(file.absolutePath)
         FileOutputStream(file).use { outputStream ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, outputStream)
+            bitmap.compress(Bitmap.CompressFormat.WEBP, 75, outputStream)
         }
-        restoreExifData(file.absolutePath, data)
+        bitmap.recycle()
     }
 
     private fun saveExifData(file: File) {
@@ -120,23 +119,31 @@ class CameraX(
         )
     }
 
-    private fun backupOrientationExifData(imagePath: String): String? {
-        return try {
-            val exif = ExifInterface(imagePath)
-            exif.getAttribute(ExifInterface.TAG_ORIENTATION)
-        } catch (e: Throwable) {
-            null
+    private fun rotateImageIfNeeded(imagePath: String): Bitmap {
+        val exif = ExifInterface(imagePath)
+        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+
+        val bitmap = BitmapFactory.decodeFile(imagePath)
+        var rotatedBitmap = bitmap
+
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> {
+                rotatedBitmap = rotateBitmap(bitmap, 90f)
+            }
+            ExifInterface.ORIENTATION_ROTATE_180 -> {
+                rotatedBitmap = rotateBitmap(bitmap, 180f)
+            }
+            ExifInterface.ORIENTATION_ROTATE_270 -> {
+                rotatedBitmap = rotateBitmap(bitmap, 270f)
+            }
         }
+
+        return rotatedBitmap
     }
 
-    private fun restoreExifData(imagePath: String, orientationExifData: String?) {
-        try {
-            ExifInterface(imagePath).apply {
-                setAttribute(ExifInterface.TAG_ORIENTATION, orientationExifData)
-                saveAttributes()
-            }
-        } catch (e: Throwable) {
-            // ignore
-        }
+    private fun rotateBitmap(source: Bitmap, degrees: Float): Bitmap {
+        val matrix = android.graphics.Matrix()
+        matrix.postRotate(degrees)
+        return Bitmap.createBitmap(source, 0, 0, source.width, source.height, matrix, true)
     }
 }
