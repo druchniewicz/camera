@@ -9,7 +9,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 
-class ProgressDialog : DialogFragment() {
+class DataProcessingDialog : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         super.onCreateDialog(savedInstanceState)
 
@@ -31,15 +31,15 @@ class ProgressDialog : DialogFragment() {
         ) {
             liveData.observe(lifecycleOwner) { isLoading: Boolean ->
                 if (isLoading) {
-                    val dialog = ProgressDialog()
+                    val dialog = DataProcessingDialog()
                     showIfNotShowing(
                         dialog,
-                        ProgressDialog::class.java.name,
+                        DataProcessingDialog::class.java.name,
                         fragmentManager
                     )
                 } else {
                     dismissDialog(
-                        ProgressDialog::class.java.name,
+                        DataProcessingDialog::class.java.name,
                         fragmentManager
                     )
                 }

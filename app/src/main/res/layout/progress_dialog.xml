@@ -25,7 +25,7 @@
         android:layout_centerVertical="true"
         android:layout_toEndOf="@id/progress_bar"
         android:layout_marginStart="16dp"
-        android:text="Loading..."
+        android:text="@string/data_processing"
         app:layout_constraintBottom_toBottomOf="@+id/progress_bar"
         app:layout_constraintStart_toEndOf="@+id/progress_bar"
         app:layout_constraintTop_toTopOf="@+id/progress_bar" />
