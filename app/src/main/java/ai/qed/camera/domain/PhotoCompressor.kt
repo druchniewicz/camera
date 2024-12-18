@@ -7,16 +7,22 @@ import java.io.File
 import java.io.FileOutputStream
 
 object PhotoCompressor {
-    fun compress(file: File) {
-        backupExifData(file.absolutePath)
+    fun compress(photo: File) {
+        backupExifData(photo.absolutePath)
+        compressPhoto(photo)
+        restoreExifData(photo.absolutePath)
+    }
 
-        val bitmap = rotateImageIfNeeded(file.absolutePath)
-        FileOutputStream(file).use { outputStream ->
-            bitmap.compress(Bitmap.CompressFormat.WEBP, 75, outputStream)
+    private fun compressPhoto(photo: File) {
+        try {
+            val bitmap = rotateImageIfNeeded(photo.absolutePath)
+            FileOutputStream(photo).use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.WEBP, 75, outputStream)
+            }
+            bitmap.recycle()
+        } catch (e: Throwable) {
+            // ignore
         }
-        bitmap.recycle()
-
-        restoreExifData(file.absolutePath)
     }
 
     private fun backupExifData(imagePath: String) {

@@ -154,13 +154,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.postValue(true)
 
-            var compressionInProgress = true
-            while (compressionInProgress) {
-                if (numberOfCompressedPhotos >= photoCounter.value!!) {
-                    compressionInProgress = false
-                } else {
-                    delay(1000)
-                }
+            while (numberOfCompressedPhotos < photoCounter.value!!) {
+                delay(1000)
             }
 
             val files = PhotoZipper.zip(
