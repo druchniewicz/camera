@@ -3,20 +3,20 @@
     <string name="automatic_mode_label">AUTOMATIC</string>
     <string name="manual_mode_label">MANUAL</string>
     <string name="settings_dialog_title">Settings</string>
-    <string name="photo_interval_dialog_label">Photo interval (in seconds)</string>
+    <string name="photo_interval_dialog_label">Photo interval (seconds)</string>
     <string name="automatic_mode_dialog_label">Automatic mode</string>
     <string name="save_dialog_button">Save</string>
     <string name="yes_button_label">Yes</string>
     <string name="cancel_button_label">Cancel</string>
     <string name="exit_dialog_title">Exit</string>
-    <string name="exit_dialog_message">Current session will be canceled and data will be lost. Do you want to continue?</string>
+    <string name="exit_dialog_message">The current session will be canceled, and data will be lost. Do you want to continue?</string>
     <string name="save_dialog_title">Finish session</string>
     <string name="save_dialog_message">Current session will be finished and data will be saved. Do you want to continue?</string>
     <string name="elapsed_time_label">Elapsed time: %1$s</string>
-    <string name="photos_taken_label">Number of photos: %d</string>
+    <string name="photos_taken_label">Photos taken: %d</string>
     <string name="session_time_label">Remaining time: %1$s</string>
-    <string name="take_photo_error_toast_message">Something went wrong while taking the photo</string>
-    <string name="camera_permission_required">Camera access is required to continue. Please grant the permission in settings.</string>
-    <string name="capture_interval_validation_message">Value must be greater than 0</string>
+    <string name="take_photo_error_toast_message">Something went wrong while taking the photo.</string>
+    <string name="camera_permission_required">Camera access is required. Please grant the permission in settings to continue.</string>
+    <string name="capture_interval_validation_message">The value must be greater than 0.</string>
     <string name="data_processing">Collected photos are being prepared to return to ODK Collect.</string>
 </resources>
