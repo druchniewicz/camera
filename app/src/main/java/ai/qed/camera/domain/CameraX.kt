@@ -58,7 +58,7 @@ class CameraX(
         )
     }
 
-    fun takePicture(
+    fun takePhoto(
         imagePath: String,
         onImageSaved: (File) -> Unit,
         onImageProcessingError: (String?) -> Unit,

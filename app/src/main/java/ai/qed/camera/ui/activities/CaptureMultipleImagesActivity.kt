@@ -104,7 +104,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
         binding.labelSessionTime.isVisible = viewmodel.isSessionTimeLimited()
         binding.btnShutter.setOnClickListener {
-            takeSinglePicture()
+            takeSinglePhoto()
         }
         binding.btnShutter.setOnLongClickListener {
             viewmodel.startProgress()
@@ -158,7 +158,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         viewmodel.isAutoMode.observe(this) { isAutoMode ->
             if (isAutoMode) {
                 binding.labelModeInfo.text = getString(R.string.automatic_mode_label)
-                takePicturesInSeries()
+                takePhotosInSeries()
             } else {
                 viewmodel.stopTakingPhotos()
                 binding.labelModeInfo.text = getString(R.string.manual_mode_label)
@@ -199,18 +199,18 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         )
     }
 
-    private fun takeSinglePicture() {
+    private fun takeSinglePhoto() {
         if (viewmodel.isSoundOn.value == true) {
             mediaPlayer.start()
         }
         binding.shutterEffectView.shutterEffect()
-        viewmodel.takePicture(cameraX, filesDir)
+        viewmodel.takePhoto(cameraX, filesDir)
     }
 
-    private fun takePicturesInSeries() {
+    private fun takePhotosInSeries() {
         if (viewmodel.isAutoMode.value == true && viewmodel.isCameraInitialized.value == true) {
-            viewmodel.startTakingPictures {
-                takeSinglePicture()
+            viewmodel.startTakingPhotos {
+                takeSinglePhoto()
             }
         }
     }
@@ -261,7 +261,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private fun resumeSession() {
         if (viewmodel.isSessionEnding.value == false) {
             viewmodel.startTimer()
-            takePicturesInSeries()
+            takePhotosInSeries()
         }
     }
 }

@@ -50,8 +50,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _progress= MutableLiveData(0)
     val progress: LiveData<Int> = _progress
 
-    private val photoQueue = MutableSharedFlow<File>()
-    private var compressedPhotos = 0
+    private val photosToCompress = MutableSharedFlow<File>()
+    private var numberOfCompressedPhotos = 0
 
     private lateinit var cameraConfig: CameraConfig
     private var timerJob: Job? = null
@@ -60,9 +60,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            photoQueue.collect { photo ->
+            photosToCompress.collect { photo ->
                 PhotoCompressor.compress(photo)
-                compressedPhotos += 1
+                numberOfCompressedPhotos += 1
             }
         }
     }
@@ -97,12 +97,12 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         timerJob?.cancel()
     }
 
-    fun startTakingPictures(onTakePicture: () -> Unit) {
+    fun startTakingPhotos(onTakePhoto: () -> Unit) {
         photosJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(cameraConfig.captureInterval * 1000L)
                 withContext(Dispatchers.Main) {
-                    onTakePicture()
+                    onTakePhoto()
                 }
             }
         }
@@ -112,19 +112,19 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         photosJob?.cancel()
     }
 
-    fun takePicture(cameraX: CameraX, storage: File) {
+    fun takePhoto(cameraX: CameraX, storage: File) {
         viewModelScope.launch(Dispatchers.IO) {
             val photoFile = File(
                 storage,
                 "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.webp"
             )
 
-            cameraX.takePicture(
+            cameraX.takePhoto(
                 photoFile.absolutePath,
                 onImageSaved = { file ->
                     _photoCounter.postValue(_photoCounter.value?.plus(1))
                     viewModelScope.launch {
-                        photoQueue.emit(file)
+                        photosToCompress.emit(file)
                     }
                 },
                 onImageProcessingError = { message ->
@@ -160,7 +160,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
             var compressionInProgress = true
             while (compressionInProgress) {
-                if (compressedPhotos >= photoCounter.value!!) {
+                if (numberOfCompressedPhotos >= photoCounter.value!!) {
                     compressionInProgress = false
                 } else {
                     delay(1000)
