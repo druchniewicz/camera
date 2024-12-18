@@ -127,10 +127,6 @@ class CaptureMultipleImagesViewModel : ViewModel() {
                         photosToCompress.emit(file)
                     }
                 },
-                onImageProcessingError = { message ->
-                    _photoCounter.postValue(_photoCounter.value?.minus(1))
-                    _error.postValue(Consumable(message))
-                },
                 onError = { message -> _error.postValue(Consumable(message)) }
             )
         }

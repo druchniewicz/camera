@@ -61,7 +61,6 @@ class CameraX(
     fun takePhoto(
         imagePath: String,
         onImageSaved: (File) -> Unit,
-        onImageProcessingError: (String?) -> Unit,
         onError: (String?) -> Unit,
     ) {
         activity.let { context ->
@@ -77,12 +76,8 @@ class CameraX(
                 ContextCompat.getMainExecutor(context),
                 object : ImageCapture.OnImageSavedCallback {
                     override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                        try {
-                            saveExifData(outputFile)
-                            onImageSaved(outputFile)
-                        } catch (e: Exception) {
-                            onImageProcessingError(e.message)
-                        }
+                        saveExifData(outputFile)
+                        onImageSaved(outputFile)
                     }
 
                     override fun onError(error: ImageCaptureException) {
