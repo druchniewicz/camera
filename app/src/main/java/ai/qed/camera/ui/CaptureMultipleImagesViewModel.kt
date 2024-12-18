@@ -44,6 +44,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _isCameraInitialized = MutableLiveData(false)
     val isCameraInitialized: LiveData<Boolean> = _isCameraInitialized
 
+    private val _isSessionEnding = MutableLiveData(false)
+    val isSessionEnding: LiveData<Boolean> = _isSessionEnding
+
     private val _progress= MutableLiveData(0)
     val progress: LiveData<Int> = _progress
 
@@ -148,6 +151,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     }
 
     fun zipFiles(storage: File) {
+        _isSessionEnding.value = true
         stopTimer()
         stopTakingPhotos()
 

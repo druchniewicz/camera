@@ -171,8 +171,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
         viewmodel.isCameraInitialized.observe(this) { isCameraInitialized ->
             if (isCameraInitialized) {
-                viewmodel.startTimer()
-                takePicturesInSeries()
+                resumeSession()
             } else {
                 pauseSession()
             }
@@ -260,7 +259,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun resumeSession() {
-        viewmodel.startTimer()
-        takePicturesInSeries()
+        if (viewmodel.isSessionEnding.value == false) {
+            viewmodel.startTimer()
+            takePicturesInSeries()
+        }
     }
 }
