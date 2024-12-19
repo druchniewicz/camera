@@ -10,6 +10,7 @@ import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.data.toCameraConfig
 import ai.qed.camera.domain.StorageHelper
 import ai.qed.camera.domain.TimeHelper
+import ai.qed.camera.domain.consume
 import ai.qed.camera.ui.CaptureMultipleImagesViewModel
 import ai.qed.camera.ui.dialogs.ExitSessionDialog
 import ai.qed.camera.ui.dialogs.DataProcessingDialog
@@ -120,11 +121,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        viewmodel.files.observe(this) { files ->
-            if (!files.isConsumed()) {
-                files.consume()
-                ResultIntentHelper.returnIntent(this, files.value)
-            }
+        viewmodel.files.consume(this) { files ->
+            ResultIntentHelper.returnIntent(this, files)
         }
         viewmodel.timer.observe(this) { time ->
             val maxSessionDuration = viewmodel.getMaxSessionDuration()
@@ -156,12 +154,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 finishSession(R.string.session_storage_limit_reached)
             }
         }
-        viewmodel.error.observe(this) { error ->
-            if (!error.isConsumed()) {
-                error.consume()
-                if (error.value != null) {
-                    Toast.makeText(this, error.value, Toast.LENGTH_LONG).show()
-                }
+        viewmodel.error.consume(this) { error ->
+            if (error != null) {
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             }
         }
         viewmodel.isAutoMode.observe(this) { isAutoMode ->
