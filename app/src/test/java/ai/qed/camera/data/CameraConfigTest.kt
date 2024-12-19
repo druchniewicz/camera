@@ -21,7 +21,6 @@ class CameraConfigTest {
         assertThat(result.captureInterval, equalTo(5))
         assertThat(result.maxPhotoCount, equalTo(0))
         assertThat(result.maxSessionDuration, equalTo(0))
-        assertThat(result.photoFormat, equalTo("jpg"))
         assertThat(result.questionNamePrefix, equalTo("part"))
         assertThat(result.maxNumberOfPackages, equalTo(100))
     }
@@ -44,7 +43,6 @@ class CameraConfigTest {
         assertThat(result.captureInterval, equalTo(10))
         assertThat(result.maxPhotoCount, equalTo(50))
         assertThat(result.maxSessionDuration, equalTo(120))
-        assertThat(result.photoFormat, equalTo("png"))
         assertThat(result.questionNamePrefix, equalTo("test"))
         assertThat(result.maxNumberOfPackages, equalTo(200))
     }
