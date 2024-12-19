@@ -50,7 +50,7 @@
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/label_photosTaken"
-            tools:text="Remaining storage: 500MB"/>
+            tools:text="Storage left: 500MB"/>
 
         <TextView
             android:id="@+id/label_sessionTime"
@@ -60,7 +60,7 @@
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/label_sessionStorage"
-            tools:text="Remaining time: 20s"/>
+            tools:text="Time left: 20s"/>
 
         <ImageButton
             android:id="@+id/btn_volume"

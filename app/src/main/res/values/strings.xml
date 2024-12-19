@@ -15,8 +15,8 @@
     <string name="elapsed_time_label">Elapsed time: %1$s</string>
     <string name="photos_taken_label">Photos taken: %d</string>
     <string name="photos_taken_with_limit_label">Photos taken: %d/%d</string>
-    <string name="session_storage_label">Remaining storage: %1$s</string>
-    <string name="session_time_label">Remaining time: %1$s</string>
+    <string name="session_storage_label">Storage left: %1$s</string>
+    <string name="session_time_label">Time left: %1$s</string>
     <string name="take_photo_error_toast_message">Something went wrong while taking the photo.</string>
     <string name="camera_permission_required">Camera access is required. Please grant the permission in settings to continue.</string>
     <string name="capture_interval_validation_message">The value must be greater than 0.</string>
