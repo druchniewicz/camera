@@ -135,9 +135,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 R.string.session_time_label,
                 TimeHelper.formatSecondsToReadableStringRepresentation(maxSessionDuration - time)
             )
-            if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
-                pauseSession()
-                saveSession()
+            if (viewmodel.isSessionTimeLimited() && maxSessionDuration - time <= 0) {
+                finishSession(R.string.session_time_limit_reached)
             }
         }
         viewmodel.photoCounter.observe(this) { photoCounter ->
@@ -146,9 +145,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             } else {
                 getString(R.string.photos_taken_label, photoCounter)
             }
-            if (viewmodel.isSessionPhotoLimitReached() || viewmodel.isSessionStorageLimitReached()) {
-                pauseSession()
-                saveSession()
+            if (viewmodel.isSessionPhotoLimitReached()) {
+                finishSession(R.string.session_photo_limit_reached)
+            } else if(viewmodel.isSessionStorageLimitReached()) {
+                finishSession(R.string.session_storage_limit_reached)
             }
         }
         viewmodel.error.observe(this) { error ->
@@ -253,6 +253,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             { finish() },
             { resumeSession() }
         )
+    }
+
+    private fun finishSession(reason: Int) {
+        Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
+        pauseSession()
+        saveSession()
     }
 
     private fun saveSession() {
