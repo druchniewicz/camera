@@ -141,7 +141,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             }
         }
         viewmodel.photoCounter.observe(this) { photoCounter ->
-            binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
+            binding.labelPhotosTaken.text = if (viewmodel.isPhotoCountLimited()) {
+                getString(R.string.photos_taken_with_limit_label, photoCounter, viewmodel.getMaxPhotoCount())
+            } else {
+                getString(R.string.photos_taken_label, photoCounter)
+            }
             if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
                 pauseSession()
                 saveSession()
