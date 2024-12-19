@@ -10,7 +10,7 @@ import java.util.zip.ZipOutputStream
 
 object PhotoZipper {
     const val PHOTO_NAME_PREFIX = "photo_"
-    private const val MAX_PACKAGE_SIZE_IN_MEGABYTES = 240
+    const val MAX_PACKAGE_SIZE_IN_MEGABYTES = 240
 
     fun zip(dir: File, questionNamePrefix: String, maxNumberOfPackages: Int): List<File> {
         val files =
