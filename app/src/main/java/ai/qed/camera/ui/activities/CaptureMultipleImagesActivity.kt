@@ -158,7 +158,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         viewmodel.isAutoMode.observe(this) { isAutoMode ->
             if (isAutoMode) {
                 binding.labelModeInfo.text = getString(R.string.automatic_mode_label)
-                takePhotosInSeries()
             } else {
                 viewmodel.stopTakingPhotos()
                 binding.labelModeInfo.text = getString(R.string.manual_mode_label)
