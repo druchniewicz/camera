@@ -8,6 +8,7 @@ import ai.qed.camera.domain.ResultIntentHelper
 import ai.qed.camera.domain.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.data.toCameraConfig
+import ai.qed.camera.domain.StorageHelper
 import ai.qed.camera.domain.TimeHelper
 import ai.qed.camera.ui.CaptureMultipleImagesViewModel
 import ai.qed.camera.ui.dialogs.ExitSessionDialog
@@ -145,6 +146,10 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             } else {
                 getString(R.string.photos_taken_label, photoCounter)
             }
+            binding.labelSessionStorage.text = getString(
+                R.string.session_storage_label,
+                StorageHelper.formatMBToReadableStringRepresentation(viewmodel.getRemainingStorageInMB())
+            )
             if (viewmodel.isSessionPhotoLimitReached()) {
                 finishSession(R.string.session_photo_limit_reached)
             } else if(viewmodel.isSessionStorageLimitReached()) {

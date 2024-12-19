@@ -185,12 +185,15 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
 
+    fun getRemainingStorageInMB(): Double =
+        cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES - (usedStorageInBytes / (1024 * 1024))
+
     fun isSessionPhotoLimitReached(): Boolean {
         return isPhotoCountLimited() && _photoCounter.value!! >= cameraConfig.maxPhotoCount
     }
 
     fun isSessionStorageLimitReached(): Boolean {
-        val usedStorageInMb = usedStorageInBytes / 1024 * 1024
+        val usedStorageInMb = usedStorageInBytes / (1024 * 1024)
         val maxStorageInMb = cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES
         return usedStorageInMb >= maxStorageInMb
     }

@@ -2,6 +2,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
     android:keepScreenOn="true">
 
     <androidx.camera.view.PreviewView
@@ -25,31 +26,41 @@
             android:id="@+id/label_elapsedTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Elapsed time:"
             android:textColor="@android:color/white"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"/>
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Elapsed time: 1m 35s"/>
 
         <TextView
             android:id="@+id/label_photosTaken"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Number of photos:"
             android:textColor="@android:color/white"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/label_elapsedTime"/>
+            app:layout_constraintTop_toBottomOf="@id/label_elapsedTime"
+            tools:text="Photos taken: 45"/>
+
+        <TextView
+            android:id="@+id/label_sessionStorage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/label_photosTaken"
+            tools:text="Remaining storage: 500MB"/>
 
         <TextView
             android:id="@+id/label_sessionTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Remaining time:"
             android:textColor="@android:color/white"
             android:textSize="16sp"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/label_photosTaken"/>
+            app:layout_constraintTop_toBottomOf="@id/label_sessionStorage"
+            tools:text="Remaining time: 20s"/>
 
         <ImageButton
             android:id="@+id/btn_volume"
