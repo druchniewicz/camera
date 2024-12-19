@@ -7,6 +7,7 @@ import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
 import ai.qed.camera.data.isAutomaticMode
 import ai.qed.camera.domain.Consumable
 import ai.qed.camera.domain.PhotoCompressor
+import ai.qed.camera.domain.PhotoZipper.MAX_PACKAGE_SIZE_IN_MEGABYTES
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -54,6 +55,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private var numberOfCompressedPhotos = 0
 
     private lateinit var cameraConfig: CameraConfig
+    private var usedStorageInBytes: Double = 0.0
     private var timerJob: Job? = null
     private var photosJob: Job? = null
     private var progressJob: Job? = null
@@ -122,6 +124,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
             cameraX.takePhoto(
                 photoFile.absolutePath,
                 onImageSaved = { file ->
+                    usedStorageInBytes += photoFile.length()
                     _photoCounter.postValue(_photoCounter.value?.plus(1))
                     viewModelScope.launch {
                         photosToCompress.emit(file)
@@ -181,4 +184,14 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     fun isPhotoCountLimited(): Boolean = cameraConfig.maxPhotoCount != 0
 
     fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
+
+    fun isSessionPhotoLimitReached(): Boolean {
+        return isPhotoCountLimited() && _photoCounter.value!! >= cameraConfig.maxPhotoCount
+    }
+
+    fun isSessionStorageLimitReached(): Boolean {
+        val usedStorageInMb = usedStorageInBytes / 1024 * 1024
+        val maxStorageInMb = cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES
+        return usedStorageInMb >= maxStorageInMb
+    }
 }

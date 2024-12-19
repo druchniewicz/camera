@@ -146,7 +146,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             } else {
                 getString(R.string.photos_taken_label, photoCounter)
             }
-            if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
+            if (viewmodel.isSessionPhotoLimitReached() || viewmodel.isSessionStorageLimitReached()) {
                 pauseSession()
                 saveSession()
             }
