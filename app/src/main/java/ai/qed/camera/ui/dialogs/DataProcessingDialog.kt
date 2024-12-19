@@ -15,7 +15,7 @@ class DataProcessingDialog : DialogFragment() {
 
         isCancelable = false
 
-        val dialogView = layoutInflater.inflate(R.layout.progress_dialog, null, false)
+        val dialogView = layoutInflater.inflate(R.layout.data_processing_dialog, null, false)
         val dialog: AlertDialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .create()
