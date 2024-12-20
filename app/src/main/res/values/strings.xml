@@ -11,11 +11,11 @@
     <string name="exit_dialog_title">Exit</string>
     <string name="exit_dialog_message">The current session will be canceled, and data will be lost. Do you want to continue?</string>
     <string name="save_dialog_title">Finish session</string>
-    <string name="save_dialog_message">Current session will be finished and data will be saved. Do you want to continue?</string>
+    <string name="save_dialog_message">The current session will be finished, and data will be saved. Do you want to continue?</string>
     <string name="elapsed_time_label">Elapsed time: %1$s</string>
     <string name="photos_taken_label">Photos taken: %d</string>
     <string name="photos_taken_with_limit_label">Photos taken: %d/%d</string>
-    <string name="session_storage_label">Storage left: %1$s</string>
+    <string name="session_storage_label">Session storage left: %1$s</string>
     <string name="session_time_label">Time left: %1$s</string>
     <string name="take_photo_error_toast_message">Something went wrong while taking the photo.</string>
     <string name="camera_permission_required">Camera access is required. Please grant the permission in settings to continue.</string>
