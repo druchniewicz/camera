@@ -148,7 +148,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             if (isAutoMode) {
                 binding.labelModeInfo.text = getString(R.string.automatic_mode_label)
             } else {
-                viewmodel.stopTakingPhotos()
                 binding.labelModeInfo.text = getString(R.string.manual_mode_label)
             }
         }
@@ -167,6 +166,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         viewmodel.progress.observe(this) { progress ->
             if (progress == 100) {
                 viewmodel.setCameraMode(viewmodel.isAutoMode.value != true)
+                if (viewmodel.isAutoMode.value == false) {
+                    viewmodel.stopTakingPhotos()
+                } else {
+                    takePhotosInSeries()
+                }
                 binding.progressBarShutterBtn.progress = 0
             } else {
                 binding.progressBarShutterBtn.progress = progress
