@@ -8,7 +8,7 @@ QED Camera is an Android application designed to work with [ODK Collect](https:/
 - **Manual Mode**: Allows users to manually take photos.
 - **Mode Switching**: Users can switch between automatic and manual modes during an active session.
 - **Interval Adjustment**: Users can change the interval between photos during an active session.
-- **Automatic Session Termination**: Sessions automatically end when storage limits are reached (e.g., 2.5GB for 10 photos).
+- **Automatic Session Termination**: Sessions automatically end when storage limits are reached (e.g., 2.5GB for a group of 10 placeholders).
 - **Timed/Photo Count Limits**: Sessions automatically terminate after reaching a specified time limit or photo count.
 - **EXIF Data**: Photos include EXIF metadata such as location, timestamp, yaw, pitch, and roll.
 - **WebP Compression**: Photos are compressed to WebP format to reduce data size.
@@ -80,5 +80,3 @@ The integration relies on defining a [group of questions](https://docs.getodk.or
 
 5. **Return Data to ODK Collect**
     - Packages are sent back to their corresponding placeholders in the form.
-
-

@@ -24,13 +24,8 @@ import android.os.Bundle
 import android.view.MotionEvent
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.isVisible
 
 class CaptureMultipleImagesActivity : AppCompatActivity() {
@@ -44,13 +39,12 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     private lateinit var mediaPlayer: MediaPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
+        enableFullScreen()
         super.onCreate(savedInstanceState)
         binding = ActivityCaptureMultipleImagesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         disableBackButton()
-        hideSystemBars()
 
         if (savedInstanceState == null) {
             clearFilesDir()
@@ -79,15 +73,6 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         onBackPressedDispatcher.addCallback(object: OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = Unit
         })
-    }
-
-    private fun hideSystemBars() {
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { view, windowInsets ->
-            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
-            ViewCompat.onApplyWindowInsets(view, windowInsets)
-        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
