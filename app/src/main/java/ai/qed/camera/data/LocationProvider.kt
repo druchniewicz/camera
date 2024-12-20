@@ -13,7 +13,10 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 
 @SuppressLint("MissingPermission")
-class LocationProvider(context: Context): DefaultLifecycleObserver {
+class LocationProvider(
+    context: Context,
+    private val interval: Int
+): DefaultLifecycleObserver {
     private val locationClient = LocationServices.getFusedLocationProviderClient(context)
     var lastKnownLocation: Location? = null
         private set
@@ -28,11 +31,27 @@ class LocationProvider(context: Context): DefaultLifecycleObserver {
 
     override fun onCreate(owner: LifecycleOwner) {
         super.onCreate(owner)
+
+        setup(interval)
+    }
+
+    override fun onDestroy(owner: LifecycleOwner) {
+        locationClient.removeLocationUpdates(locationCallback)
+        super.onDestroy(owner)
+    }
+
+    fun updateInterval(interval: Int) {
+        setup(interval)
+    }
+
+    private fun setup(interval: Int) {
+        locationClient.removeLocationUpdates(locationCallback)
+
         val locationRequest = LocationRequest.Builder(
             Priority.PRIORITY_HIGH_ACCURACY,
-            10000
+            interval * 1000L
         ).apply {
-            setMinUpdateIntervalMillis(5000)
+            setMinUpdateIntervalMillis(interval * 1000L)
         }.build()
 
         locationClient.requestLocationUpdates(
@@ -40,10 +59,5 @@ class LocationProvider(context: Context): DefaultLifecycleObserver {
             locationCallback,
             Looper.getMainLooper()
         )
-    }
-
-    override fun onDestroy(owner: LifecycleOwner) {
-        locationClient.removeLocationUpdates(locationCallback)
-        super.onDestroy(owner)
     }
 }

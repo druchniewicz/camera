@@ -6,6 +6,8 @@ import ai.qed.camera.domain.PhotoZipper
 import ai.qed.camera.domain.PhotoZipper.PHOTO_NAME_PREFIX
 import ai.qed.camera.data.isAutomaticMode
 import ai.qed.camera.domain.Consumable
+import ai.qed.camera.domain.PhotoCompressor
+import ai.qed.camera.domain.PhotoZipper.MAX_PACKAGE_SIZE_IN_MEGABYTES
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -13,6 +15,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -42,13 +45,29 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     private val _isCameraInitialized = MutableLiveData(false)
     val isCameraInitialized: LiveData<Boolean> = _isCameraInitialized
 
+    private val _isSessionEnding = MutableLiveData(false)
+    val isSessionEnding: LiveData<Boolean> = _isSessionEnding
+
     private val _progress= MutableLiveData(0)
     val progress: LiveData<Int> = _progress
 
+    private val photosToCompress = MutableSharedFlow<File>()
+    private var numberOfCompressedPhotos = 0
+
     private lateinit var cameraConfig: CameraConfig
+    private var usedStorageInBytes: Double = 0.0
     private var timerJob: Job? = null
     private var photosJob: Job? = null
     private var progressJob: Job? = null
+
+    init {
+        viewModelScope.launch(Dispatchers.IO) {
+            photosToCompress.collect { photo ->
+                PhotoCompressor.compress(photo)
+                numberOfCompressedPhotos += 1
+            }
+        }
+    }
 
     fun setCameraConfig(cameraConfig: CameraConfig) {
         this.cameraConfig = cameraConfig
@@ -80,12 +99,12 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         timerJob?.cancel()
     }
 
-    fun startTakingPictures(onTakePicture: () -> Unit) {
+    fun startTakingPhotos(onTakePhoto: () -> Unit) {
         photosJob = viewModelScope.launch(Dispatchers.IO) {
             while (true) {
                 delay(cameraConfig.captureInterval * 1000L)
                 withContext(Dispatchers.Main) {
-                    onTakePicture()
+                    onTakePhoto()
                 }
             }
         }
@@ -95,19 +114,21 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         photosJob?.cancel()
     }
 
-    fun takePicture(cameraX: CameraX, storage: File) {
+    fun takePhoto(cameraX: CameraX, storage: File) {
         viewModelScope.launch(Dispatchers.IO) {
             val photoFile = File(
                 storage,
                 "$PHOTO_NAME_PREFIX${System.currentTimeMillis()}.webp"
             )
 
-            cameraX.takePicture(
+            cameraX.takePhoto(
                 photoFile.absolutePath,
-                onImageSaved = { _photoCounter.postValue(_photoCounter.value?.plus(1)) },
-                onImageProcessingError = { message ->
-                    _photoCounter.postValue(_photoCounter.value?.minus(1))
-                    _error.postValue(Consumable(message))
+                onImageSaved = { file ->
+                    usedStorageInBytes += photoFile.length()
+                    _photoCounter.postValue(_photoCounter.value?.plus(1))
+                    viewModelScope.launch {
+                        photosToCompress.emit(file)
+                    }
                 },
                 onError = { message -> _error.postValue(Consumable(message)) }
             )
@@ -129,11 +150,17 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     }
 
     fun zipFiles(storage: File) {
+        _isSessionEnding.value = true
         stopTimer()
         stopTakingPhotos()
 
         viewModelScope.launch(Dispatchers.IO) {
             _isLoading.postValue(true)
+
+            while (numberOfCompressedPhotos < photoCounter.value!!) {
+                delay(1000)
+            }
+
             val files = PhotoZipper.zip(
                 storage,
                 cameraConfig.questionNamePrefix,
@@ -148,10 +175,8 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun getCaptureInterval(): Int = cameraConfig.captureInterval
 
-    fun setCaptureInterval(captureInterval: Int?) {
-        if (captureInterval != null) {
-            cameraConfig.captureInterval = captureInterval
-        }
+    fun setCaptureInterval(captureInterval: Int) {
+        cameraConfig.captureInterval = captureInterval
     }
 
     fun getMaxSessionDuration():Int = cameraConfig.maxSessionDuration
@@ -159,4 +184,17 @@ class CaptureMultipleImagesViewModel : ViewModel() {
     fun isPhotoCountLimited(): Boolean = cameraConfig.maxPhotoCount != 0
 
     fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
+
+    fun getRemainingStorageInMB(): Double =
+        cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES - (usedStorageInBytes / (1024 * 1024))
+
+    fun isSessionPhotoLimitReached(): Boolean {
+        return isPhotoCountLimited() && _photoCounter.value!! >= cameraConfig.maxPhotoCount
+    }
+
+    fun isSessionStorageLimitReached(): Boolean {
+        val usedStorageInMb = usedStorageInBytes / (1024 * 1024)
+        val maxStorageInMb = cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES
+        return usedStorageInMb >= maxStorageInMb
+    }
 }

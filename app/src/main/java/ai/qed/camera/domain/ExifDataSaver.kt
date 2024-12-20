@@ -38,7 +38,7 @@ object ExifDataSaver {
 
                 saveAttributes()
             }
-        } catch (e: IOException) {
+        } catch (e: Throwable) {
             Log.e("CaptureMultiplePhotos", "Failed to save EXIF data", e)
         }
     }

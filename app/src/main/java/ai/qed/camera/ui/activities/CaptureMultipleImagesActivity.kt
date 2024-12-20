@@ -8,10 +8,12 @@ import ai.qed.camera.domain.ResultIntentHelper
 import ai.qed.camera.domain.clearFilesDir
 import ai.qed.camera.databinding.ActivityCaptureMultipleImagesBinding
 import ai.qed.camera.data.toCameraConfig
+import ai.qed.camera.domain.StorageHelper
 import ai.qed.camera.domain.TimeHelper
+import ai.qed.camera.domain.consume
 import ai.qed.camera.ui.CaptureMultipleImagesViewModel
 import ai.qed.camera.ui.dialogs.ExitSessionDialog
-import ai.qed.camera.ui.dialogs.ProgressDialog
+import ai.qed.camera.ui.dialogs.DataProcessingDialog
 import ai.qed.camera.ui.dialogs.SaveSessionDialog
 import ai.qed.camera.ui.dialogs.SettingsDialog
 import ai.qed.camera.ui.shutterEffect
@@ -55,7 +57,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             viewmodel.setCameraConfig(toCameraConfig(intent))
         }
 
-        locationProvider = LocationProvider(this)
+        locationProvider = LocationProvider(this, viewmodel.getCaptureInterval())
         deviceOrientationProvider = DeviceOrientationProvider(getSystemService(SENSOR_SERVICE) as? SensorManager)
         lifecycle.addObserver(locationProvider)
         lifecycle.addObserver(deviceOrientationProvider)
@@ -104,7 +106,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
         binding.labelSessionTime.isVisible = viewmodel.isSessionTimeLimited()
         binding.btnShutter.setOnClickListener {
-            takeSinglePicture()
+            takeSinglePhoto()
         }
         binding.btnShutter.setOnLongClickListener {
             viewmodel.startProgress()
@@ -119,11 +121,8 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        viewmodel.files.observe(this) { files ->
-            if (!files.isConsumed()) {
-                files.consume()
-                ResultIntentHelper.returnIntent(this, files.value)
-            }
+        viewmodel.files.consume(this) { files ->
+            ResultIntentHelper.returnIntent(this, files)
         }
         viewmodel.timer.observe(this) { time ->
             val maxSessionDuration = viewmodel.getMaxSessionDuration()
@@ -135,30 +134,34 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
                 R.string.session_time_label,
                 TimeHelper.formatSecondsToReadableStringRepresentation(maxSessionDuration - time)
             )
-            if (maxSessionDuration != 0 && maxSessionDuration - time <= 0) {
-                pauseSession()
-                saveSession()
+            if (viewmodel.isSessionTimeLimited() && maxSessionDuration - time <= 0) {
+                finishSession(R.string.session_time_limit_reached)
             }
         }
         viewmodel.photoCounter.observe(this) { photoCounter ->
-            binding.labelPhotosTaken.text = getString(R.string.photos_taken_label, photoCounter)
-            if (viewmodel.isPhotoCountLimited() && photoCounter == viewmodel.getMaxPhotoCount()) {
-                pauseSession()
-                saveSession()
+            binding.labelPhotosTaken.text = if (viewmodel.isPhotoCountLimited()) {
+                getString(R.string.photos_taken_with_limit_label, photoCounter, viewmodel.getMaxPhotoCount())
+            } else {
+                getString(R.string.photos_taken_label, photoCounter)
+            }
+            binding.labelSessionStorage.text = getString(
+                R.string.session_storage_label,
+                StorageHelper.formatMBToReadableStringRepresentation(viewmodel.getRemainingStorageInMB())
+            )
+            if (viewmodel.isSessionPhotoLimitReached()) {
+                finishSession(R.string.session_photo_limit_reached)
+            } else if(viewmodel.isSessionStorageLimitReached()) {
+                finishSession(R.string.session_storage_limit_reached)
             }
         }
-        viewmodel.error.observe(this) { error ->
-            if (!error.isConsumed()) {
-                error.consume()
-                if (error.value != null) {
-                    Toast.makeText(this, error.value, Toast.LENGTH_LONG).show()
-                }
+        viewmodel.error.consume(this) { error ->
+            if (error != null) {
+                Toast.makeText(this, error, Toast.LENGTH_LONG).show()
             }
         }
         viewmodel.isAutoMode.observe(this) { isAutoMode ->
             if (isAutoMode) {
                 binding.labelModeInfo.text = getString(R.string.automatic_mode_label)
-                takePicturesInSeries()
             } else {
                 viewmodel.stopTakingPhotos()
                 binding.labelModeInfo.text = getString(R.string.manual_mode_label)
@@ -171,8 +174,7 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         }
         viewmodel.isCameraInitialized.observe(this) { isCameraInitialized ->
             if (isCameraInitialized) {
-                viewmodel.startTimer()
-                takePicturesInSeries()
+                resumeSession()
             } else {
                 pauseSession()
             }
@@ -200,18 +202,18 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         )
     }
 
-    private fun takeSinglePicture() {
+    private fun takeSinglePhoto() {
         if (viewmodel.isSoundOn.value == true) {
             mediaPlayer.start()
         }
         binding.shutterEffectView.shutterEffect()
-        viewmodel.takePicture(cameraX, filesDir)
+        viewmodel.takePhoto(cameraX, filesDir)
     }
 
-    private fun takePicturesInSeries() {
+    private fun takePhotosInSeries() {
         if (viewmodel.isAutoMode.value == true && viewmodel.isCameraInitialized.value == true) {
-            viewmodel.startTakingPictures {
-                takeSinglePicture()
+            viewmodel.startTakingPhotos {
+                takeSinglePhoto()
             }
         }
     }
@@ -224,7 +226,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
             viewmodel.isAutoMode.value == true,
             { captureInterval, isAutomaticMode ->
                 viewmodel.setCameraMode(isAutomaticMode)
-                viewmodel.setCaptureInterval(captureInterval.toIntOrNull())
+                val newInterval = captureInterval.toIntOrNull()
+                if (newInterval != null && newInterval != viewmodel.getCaptureInterval()) {
+                    viewmodel.setCaptureInterval(newInterval)
+                    locationProvider.updateInterval(newInterval)
+                }
                 resumeSession()
             },
             { resumeSession() }
@@ -249,9 +255,15 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         )
     }
 
+    private fun finishSession(reason: Int) {
+        Toast.makeText(this, reason, Toast.LENGTH_LONG).show()
+        pauseSession()
+        saveSession()
+    }
+
     private fun saveSession() {
         viewmodel.zipFiles(filesDir)
-        ProgressDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
+        DataProcessingDialog.showOn(this, viewmodel.isLoading, supportFragmentManager)
     }
 
     private fun pauseSession() {
@@ -260,7 +272,9 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
     }
 
     private fun resumeSession() {
-        viewmodel.startTimer()
-        takePicturesInSeries()
+        if (viewmodel.isSessionEnding.value == false) {
+            viewmodel.startTimer()
+            takePhotosInSeries()
+        }
     }
 }
