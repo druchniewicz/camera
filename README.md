@@ -80,3 +80,14 @@ The integration relies on defining a [group of questions](https://docs.getodk.or
 
 5. **Return Data to ODK Collect**
     - Packages are sent back to their corresponding placeholders in the form.
+
+## Ensuring Stability of Long-Running Sessions
+The process of data collection involves one app (ODK Collect) launching another (QED Camera) to perform long-running sessions, which may last over an hour. Under certain conditions, the Android system may terminate the background app due to limited resources.
+
+To reduce the risk of interruptions during long-running sessions, follow these steps:
+
+1. **Close Other Apps**: Before starting the session, close any unnecessary apps running in the background to free up system resources.
+
+2. **Avoid Multitasking**: During the session, avoid switching between applications or performing other memory-intensive tasks.
+
+3. **Avoid Frequent Screen Rotation**: Try to avoid rotating the screen frequently during the session. Constant changes in screen orientation can affect performance and may result in resource reallocation, increasing the risk of session disruption.
