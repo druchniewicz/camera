@@ -56,6 +56,7 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     private lateinit var cameraConfig: CameraConfig
     private var usedStorageInBytes: Double = 0.0
+    private var averagePhotoSizeInBytes: Double = 0.0
     private var timerJob: Job? = null
     private var photosJob: Job? = null
     private var progressJob: Job? = null
@@ -64,7 +65,9 @@ class CaptureMultipleImagesViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             photosToCompress.collect { photo ->
                 PhotoCompressor.compress(photo)
+                usedStorageInBytes += File(photo.absolutePath).length()
                 numberOfCompressedPhotos += 1
+                averagePhotoSizeInBytes = usedStorageInBytes / numberOfCompressedPhotos
             }
         }
     }
@@ -124,7 +127,6 @@ class CaptureMultipleImagesViewModel : ViewModel() {
             cameraX.takePhoto(
                 photoFile.absolutePath,
                 onImageSaved = { file ->
-                    usedStorageInBytes += photoFile.length()
                     _photoCounter.postValue(_photoCounter.value?.plus(1))
                     viewModelScope.launch {
                         photosToCompress.emit(file)
@@ -185,16 +187,19 @@ class CaptureMultipleImagesViewModel : ViewModel() {
 
     fun getMaxPhotoCount(): Int = cameraConfig.maxPhotoCount
 
-    fun getRemainingStorageInMB(): Double =
-        cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES - (usedStorageInBytes / (1024 * 1024))
+    fun getRemainingStorageInMB(): Double {
+        return cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES - getEstimatedUsedStorageInMB()
+    }
 
     fun isSessionPhotoLimitReached(): Boolean {
         return isPhotoCountLimited() && _photoCounter.value!! >= cameraConfig.maxPhotoCount
     }
 
     fun isSessionStorageLimitReached(): Boolean {
-        val usedStorageInMb = usedStorageInBytes / (1024 * 1024)
-        val maxStorageInMb = cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES
-        return usedStorageInMb >= maxStorageInMb
+        val maxStorageInMB = cameraConfig.maxNumberOfPackages * MAX_PACKAGE_SIZE_IN_MEGABYTES
+        return getEstimatedUsedStorageInMB() >= maxStorageInMB
     }
+
+    private fun getEstimatedUsedStorageInMB() =
+        (averagePhotoSizeInBytes * photoCounter.value!!) / (1024 * 1024)
 }
