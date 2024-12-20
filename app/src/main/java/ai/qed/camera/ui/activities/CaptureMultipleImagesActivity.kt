@@ -69,6 +69,11 @@ class CaptureMultipleImagesActivity : AppCompatActivity() {
         mediaPlayer.release()
     }
 
+    override fun onDestroy() {
+        cameraX.cleanup()
+        super.onDestroy()
+    }
+
     private fun disableBackButton() {
         onBackPressedDispatcher.addCallback(object: OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = Unit
