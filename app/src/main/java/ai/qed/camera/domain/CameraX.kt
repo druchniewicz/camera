@@ -92,6 +92,14 @@ class CameraX(
         }
     }
 
+    fun cleanup() {
+        activity?.let {
+            val cameraProvider = ProcessCameraProvider.getInstance(it).get()
+            cameraProvider.unbindAll()
+        }
+        activity = null
+    }
+
     private fun saveExifData(file: File) {
         ExifDataSaver.saveLocationAttributes(
             file,

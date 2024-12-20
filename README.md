@@ -8,11 +8,11 @@ QED Camera is an Android application designed to work with [ODK Collect](https:/
 - **Manual Mode**: Allows users to manually take photos.
 - **Mode Switching**: Users can switch between automatic and manual modes during an active session.
 - **Interval Adjustment**: Users can change the interval between photos during an active session.
-- **Automatic Session Termination**: Sessions automatically end when storage limits are reached (e.g., 2.5GB for a group of 10 placeholders).
+- **Automatic Session Termination**: Sessions automatically end when storage limits are reached (e.g., 2.4GB for a group of 10 placeholders).
 - **Timed/Photo Count Limits**: Sessions automatically terminate after reaching a specified time limit or photo count.
 - **EXIF Data**: Photos include EXIF metadata such as location, timestamp, yaw, pitch, and roll.
 - **WebP Compression**: Photos are compressed to WebP format to reduce data size.
-- Supports packaging photos into bundles up to 250MB for seamless uploading to a server.
+- Supports packaging photos into bundles up to 240MB for seamless uploading to a server.
 - Configurable parameters for flexible use cases.
 
 ## Integration with ODK Collect
@@ -23,7 +23,7 @@ QED Camera is initiated from ODK Collect via an intent-based configuration in th
 ai.qed.camera(questionNamePrefix='part',maxNumberOfPackages='5',mode='automatic',captureInterval='3')
 ```
 
-The integration relies on defining a [group of questions](https://docs.getodk.org/collect-external-apps/#external-apps-to-populate-multiple-fields) rather than a [single question](https://docs.getodk.org/collect-external-apps/#designing-an-app-to-return-a-single-value-to-collect) that could be populated by an external app. This approach prevents the creation of a single, excessively large file by dividing the photos into smaller, manageable packages (up to 250MB each), as required by server limitations. It is the responsibility of the form designer to define a group with the appropriate number of questions (placeholders). For example, if a form contains 10 questions, it allows collecting up to 2.5GB of photos (10 x 250MB).
+The integration relies on defining a [group of questions](https://docs.getodk.org/collect-external-apps/#external-apps-to-populate-multiple-fields) rather than a [single question](https://docs.getodk.org/collect-external-apps/#designing-an-app-to-return-a-single-value-to-collect) that could be populated by an external app. This approach prevents the creation of a single, excessively large file by dividing the photos into smaller, manageable packages (up to 240MB each), as required by server limitations. It is the responsibility of the form designer to define a group with the appropriate number of questions (placeholders). For example, if a form contains 10 questions, it allows collecting up to 2.4GB of photos (10 x 240MB).
 
 ## Sample ODK form
 
@@ -80,3 +80,14 @@ The integration relies on defining a [group of questions](https://docs.getodk.or
 
 5. **Return Data to ODK Collect**
     - Packages are sent back to their corresponding placeholders in the form.
+
+## Ensuring Stability of Long-Running Sessions
+The process of data collection involves one app (ODK Collect) launching another (QED Camera) to perform long-running sessions, which may last over an hour. Under certain conditions, the Android system may terminate the background app due to limited resources.
+
+To reduce the risk of interruptions during long-running sessions, follow these steps:
+
+1. **Close Other Apps**: Before starting the session, close any unnecessary apps running in the background to free up system resources.
+
+2. **Avoid Multitasking**: During the session, avoid switching between applications or performing other memory-intensive tasks.
+
+3. **Avoid Frequent Screen Rotation**: Try to avoid rotating the screen frequently during the session. Constant changes in screen orientation can affect performance and may result in resource reallocation, increasing the risk of session disruption.
